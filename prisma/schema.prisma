@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  password      String
+  image         String?
+  role          String    @default("USER")
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  cars          Car[]
+  bookings      Booking[]
+  reviews       Review[]
+}
+
+model Car {
+  id              String    @id @default(cuid())
+  ownerId         String
+  brand           String
+  model           String
+  year            Int
+  transmission    String
+  fuelType        String
+  seats           Int
+  pricePerHour    Float
+  pricePerDay     Float
+  deposit         Float     @default(0)
+  description     String
+  lat             Float
+  lng             Float
+  address         String
+  city            String
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  owner           User      @relation(fields: [ownerId], references: [id])
+  images          CarImage[]
+  bookings        Booking[]
+  reviews         Review[]
+  availabilities  CarAvailability[]
+
+  @@index([city])
+  @@index([isActive])
+}
+
+model CarImage {
+  id        String @id @default(cuid())
+  carId     String
+  url       String
+  isPrimary Boolean @default(false)
+
+  car       Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@index([carId])
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  carId       String
+  renterId    String
+  startDate   DateTime
+  endDate     DateTime
+  totalPrice  Float
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  car         Car      @relation(fields: [carId], references: [id])
+  renter      User     @relation(fields: [renterId], references: [id])
+  review      Review?
+
+  @@index([carId])
+  @@index([renterId])
+  @@index([status])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  bookingId  String   @unique
+  reviewerId String
+  carId      String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  car        Car      @relation(fields: [carId], references: [id])
+
+  @@index([carId])
+  @@index([reviewerId])
+}
+
+model CarAvailability {
+  id          String   @id @default(cuid())
+  carId       String
+  date        DateTime
+  isAvailable Boolean  @default(true)
+
+  car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
+
+  @@unique([carId, date])
+  @@index([carId])
+}
