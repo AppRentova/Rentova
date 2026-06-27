@@ -17,32 +17,48 @@ interface CarCategoriesProps {
 }
 
 const categories = [
-  { key: "city", icon: "🚗", color: "bg-blue-50 text-blue-600" },
-  { key: "commercial", icon: "🚐", color: "bg-green-50 text-green-600" },
-  { key: "family", icon: "🚙", color: "bg-orange-50 text-orange-600" },
-  { key: "suv", icon: "🚘", color: "bg-purple-50 text-purple-600" },
+  { key: "city", icon: "🚗", tone: "from-sky-50 to-blue-100 text-sky-700" },
+  { key: "commercial", icon: "🚚", tone: "from-emerald-50 to-green-100 text-emerald-700" },
+  { key: "family", icon: "🚐", tone: "from-orange-50 to-amber-100 text-orange-700" },
+  { key: "suv", icon: "🚙", tone: "from-violet-50 to-purple-100 text-violet-700" },
 ];
 
 export function CarCategories({ messages, locale }: CarCategoriesProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
-  return (
-    <section className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-gray-900 text-center mb-10">
-          {t("home.categories_title")}
-        </h2>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+  return (
+    <section className="py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-flex rounded-full border border-gray-200 bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-500 shadow-sm">
+            {t("home.categories_title")}
+          </span>
+          <h2 className="mt-5 text-3xl font-black tracking-tight text-[#1d1138] sm:text-4xl">
+            {locale === "tr" ? "İhtiyacına uygun aracı seç" : "Choose a car for every plan"}
+          </h2>
+          <p className="mt-4 text-lg leading-8 text-gray-600">
+            {locale === "tr"
+              ? "Şehir içi pratik araçlardan aile yolculuklarına kadar her senaryo için düzenlenmiş koleksiyonlar."
+              : "Curated collections for everything from city trips to family road journeys."}
+          </p>
+        </div>
+
+        <div className="mt-14 grid grid-cols-2 gap-4 md:grid-cols-4">
           {categories.map((cat) => (
             <Link
               key={cat.key}
               href={`/${locale}/search?type=${cat.key}`}
-              className="flex flex-col items-center gap-3 p-8 rounded-sm bg-white border border-gray-100 hover:shadow-md hover:-translate-y-0.5 transition-all"
+              className="group rounded-[28px] border border-gray-100 bg-white p-6 shadow-[0_18px_60px_rgba(29,17,56,0.06)] transition hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(29,17,56,0.1)]"
             >
-              <span className={`inline-flex items-center justify-center w-14 h-14 rounded-sm text-2xl ${cat.color}`}>
+              <div className={`flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${cat.tone} text-3xl shadow-sm transition group-hover:scale-105`}>
                 {cat.icon}
-              </span>
-              <span className="font-medium text-gray-900">{t(`home.${cat.key}`)}</span>
+              </div>
+              <div className="mt-5">
+                <p className="text-lg font-bold text-[#1d1138]">{t(`home.${cat.key}`)}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-500">
+                  {locale === "tr" ? "Hızlı keşif" : "Quick discovery"}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

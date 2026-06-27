@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useCallback } from "react";
-import { Button } from "@/components/ui";
+import { useRouter } from "next/navigation";
 
 function lookup(messages: Record<string, any>, key: string): string {
   let value: any = messages;
@@ -21,6 +21,14 @@ interface HeaderProps {
 export function Header({ messages, locale, session }: HeaderProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+
+  const handleLogout = useCallback(async () => {
+    setMenuOpen(false);
+    await fetch("/api/auth/logout");
+    router.push(`/${locale}/auth/login`);
+    router.refresh();
+  }, [locale, router]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur border-b border-gray-100">
@@ -100,9 +108,13 @@ export function Header({ messages, locale, session }: HeaderProps) {
                 <Link href={`/${locale}/dashboard`} className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
                   {t("nav.dashboard")}
                 </Link>
-                <Link href={`/${locale}/api/auth/logout`} className="block text-sm font-medium text-gray-700 py-2" onClick={() => setMenuOpen(false)}>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="block w-full text-left text-sm font-medium text-gray-700 py-2"
+                >
                   {t("nav.logout")}
-                </Link>
+                </button>
               </>
             ) : (
               <>
@@ -120,4 +132,3 @@ export function Header({ messages, locale, session }: HeaderProps) {
     </header>
   );
 }
-

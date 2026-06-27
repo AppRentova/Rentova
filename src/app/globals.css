@@ -12,13 +12,17 @@
   --color-foreground: var(--foreground);
   --color-brand-purple: var(--primary-purple);
   --color-brand-purple-hover: var(--primary-purple-hover);
-  --font-sans: 'Inter', Arial, Helvetica, sans-serif;
+  --font-sans: var(--font-geist-sans);
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(180, 0, 180, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(29, 17, 56, 0.08), transparent 25%),
+    var(--background);
   color: var(--foreground);
-  font-family: 'Inter', Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  scroll-behavior: smooth;
 }
 
 /* Custom Hide Scrollbar style */
@@ -63,4 +67,3 @@ body {
   color: #ffffff;
   z-index: 1000;
 }
-

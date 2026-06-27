@@ -19,6 +19,12 @@ interface HeroProps {
   locale: string;
 }
 
+const highlightPills = [
+  { title: "7/24 erişim", desc: "Her an kirala, her an ilan ver." },
+  { title: "Türkiye odaklı", desc: "Şehir, mahalle ve konum bazlı keşif." },
+  { title: "Güvenli ödeme", desc: "Kiralama öncesi doğrulanmış akışlar." },
+];
+
 export function Hero({ messages, locale }: HeroProps) {
   const router = useRouter();
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
@@ -28,146 +34,198 @@ export function Hero({ messages, locale }: HeroProps) {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    router.push(`/${locale}/search?q=${encodeURIComponent(location)}&start=${startDate.toISOString()}&end=${endDate.toISOString()}`);
+    router.push(
+      `/${locale}/search?q=${encodeURIComponent(location)}&start=${startDate.toISOString()}&end=${endDate.toISOString()}`
+    );
   };
 
   return (
-    <section className="relative min-h-[90vh] flex items-center bg-white pt-24 overflow-hidden">
-      {/* Background Graphic Swirls */}
-      <div className="absolute right-0 bottom-0 w-1/2 h-full pointer-events-none opacity-30 select-none hidden lg:block">
-        <svg viewBox="0 0 500 500" className="w-full h-full text-purple-100 fill-current">
-          <path d="M100,250 C150,100 350,100 400,250 C450,400 250,450 100,250 Z" />
-        </svg>
+    <section className="relative overflow-hidden bg-[#fbf8ff] pt-24">
+      <div className="absolute inset-0">
+        <div className="absolute -left-16 top-12 h-64 w-64 rounded-full bg-[rgba(180,0,180,0.12)] blur-3xl" />
+        <div className="absolute right-0 top-0 h-80 w-80 rounded-full bg-[rgba(29,17,56,0.08)] blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-56 w-56 rounded-full bg-[rgba(180,0,180,0.08)] blur-3xl" />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12 w-full grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-        {/* Left Search Form & Title */}
-        <div className="lg:col-span-7 flex flex-col justify-center">
-          <h1 className="text-5xl lg:text-7xl font-extrabold text-[#1d1138] leading-[1.1] tracking-tight">
-            {locale === "tr" ? "Birkaç tıkla" : "Rent a car"}<br />
-            {locale === "tr" ? "araç kirala" : "in just a few taps"}
+      <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-4 py-10 sm:px-6 lg:grid-cols-12 lg:px-8 lg:py-20">
+        <div className="lg:col-span-7">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[rgba(180,0,180,0.15)] bg-white/80 px-4 py-2 text-xs font-semibold text-[var(--primary-purple)] shadow-sm backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-[var(--primary-purple)]" />
+            Türkiye için yeniden tasarlanmış araç paylaşım deneyimi
+          </div>
+
+          <h1 className="mt-6 max-w-3xl text-5xl font-black tracking-tight text-[#1d1138] sm:text-6xl lg:text-7xl">
+            {locale === "tr" ? "Araç kiralamayı" : "Rent a car"}
+            <span className="mt-2 block text-[var(--primary-purple)]">
+              {locale === "tr" ? "daha hızlı, daha güvenli" : "faster, safer, simpler"}
+            </span>
           </h1>
-          <p className="mt-4 text-xl lg:text-2xl font-extrabold text-brand-purple">
-            {locale === "tr" ? "Telefonunla 7/24 araçların kilidini aç ve git!" : "Unlock cars 24/7 with your phone, and go!"}
+
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-600 sm:text-xl">
+            {locale === "tr"
+              ? "Şehir içi kullanım, hafta sonu kaçamağı veya uzun yol için doğru aracı saniyeler içinde bul. Aracını listelemek de kiralamak kadar kolay."
+              : "Find the right car in seconds for city trips, weekend escapes, or long drives. Listing your car is just as easy as renting one."}
           </p>
 
-          <form onSubmit={handleSearch} className="mt-8 max-w-xl space-y-6 bg-white p-6 rounded-sm border border-gray-150/80 shadow-xl">
-            {/* Address Input */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+          <div className="mt-8 flex flex-wrap gap-3">
+            {highlightPills.map((pill) => (
+              <div
+                key={pill.title}
+                className="rounded-2xl border border-white/70 bg-white/80 px-4 py-3 shadow-sm backdrop-blur"
+              >
+                <p className="text-sm font-bold text-[#1d1138]">{pill.title}</p>
+                <p className="text-xs text-gray-500">{pill.desc}</p>
               </div>
-              <input
-                type="text"
-                placeholder={locale === "tr" ? "Adres, istasyon veya şehir yazın..." : "Precise address, train or tube station..."}
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full rounded-sm border border-gray-300 pl-12 pr-6 py-4 text-sm font-semibold text-gray-800 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-brand-purple focus:border-transparent transition-all"
+            ))}
+          </div>
+
+          <form
+            onSubmit={handleSearch}
+            className="mt-10 max-w-2xl rounded-[28px] border border-white/70 bg-white/90 p-4 shadow-[0_25px_80px_rgba(29,17,56,0.12)] backdrop-blur"
+          >
+            <div className="space-y-4">
+              <div className="relative">
+                <div className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[var(--primary-purple)]">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder={locale === "tr" ? "İstanbul, Kadıköy, İzmir..." : "Istanbul, Kadikoy, Izmir..."}
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full rounded-2xl border border-gray-200 bg-[#faf9fd] py-4 pl-12 pr-5 text-sm font-medium text-gray-900 outline-none transition focus:border-[var(--primary-purple)] focus:ring-2 focus:ring-[rgba(180,0,180,0.15)]"
+                />
+              </div>
+
+              <DateTimePicker
+                locale={locale}
+                startDate={startDate}
+                endDate={endDate}
+                onChange={(start, end) => {
+                  setStartDate(start);
+                  setEndDate(end);
+                }}
               />
+
+              <button
+                type="submit"
+                className="inline-flex w-full items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#b400b4,#6d2ef0)] px-6 py-4 text-base font-bold text-white shadow-lg shadow-[rgba(180,0,180,0.25)] transition hover:translate-y-[-1px] hover:shadow-xl"
+              >
+                {locale === "tr" ? "Araçları keşfet" : "Search cars"}
+              </button>
             </div>
-
-            {/* Custom Date Time Picker */}
-            <DateTimePicker 
-              locale={locale} 
-              startDate={startDate} 
-              endDate={endDate} 
-              onChange={(start, end) => { setStartDate(start); setEndDate(end); }}
-            />
-
-            {/* Search Button */}
-            <button
-              type="submit"
-              className="w-full bg-brand-purple hover:bg-brand-purple-hover text-white font-bold py-4 rounded-sm text-base transition-all shadow-md hover:shadow-lg active:scale-[0.98] cursor-pointer"
-            >
-              {locale === "tr" ? "Ara" : "Search"}
-            </button>
           </form>
 
-
-          <p className="mt-4 text-xs font-semibold text-gray-500">
-            {locale === "tr" ? "Yolculuk sorumluluk sigortası dahil yerel halktan araba kiralama" : "Car rental by locals with trip liability insurance included"}
-          </p>
-
-          {/* Download badges & rating */}
-          <div className="mt-8 flex flex-wrap items-center gap-6">
-            <div className="flex gap-3">
-              <a href="#" className="h-10 px-4 bg-[#1d1138] hover:bg-black text-white rounded-sm flex items-center gap-2 border border-gray-800 transition-colors">
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M18.71,19.5 C17.88,20.74 17,21.95 15.66,21.97 C14.32,22 13.89,21.18 12.37,21.18 C10.84,21.18 10.37,21.95 9.1,22 C7.79,22.05 6.8,20.68 5.96,19.47 C4.25,17 2.94,12.45 4.7,9.39 C5.57,7.87 7.13,6.91 8.82,6.88 C10.1,6.86 11.32,7.75 12.11,7.75 C12.89,7.75 14.37,6.68 15.92,6.84 C16.57,6.87 18.39,7.1 19.56,8.82 C19.47,8.88 17.39,10.1 17.41,12.63 C17.44,15.65 20.06,16.66 20.1,16.67 C20.08,16.74 19.67,18.11 18.71,19.5 M15.97,4.17 C16.63,3.37 17.07,2.28 16.95,1 C16,1.04 14.9,1.6 14.24,2.38 C13.68,3.04 13.19,4.14 13.34,5.39 C14.39,5.47 15.4,4.88 15.97,4.17 Z" />
-                </svg>
-                <div className="text-[10px] text-left">
-                  <span className="block text-[8px] text-gray-400">Download on the</span>
-                  <span className="font-bold">App Store</span>
-                </div>
-              </a>
-              <a href="#" className="h-10 px-4 bg-[#1d1138] hover:bg-black text-white rounded-sm flex items-center gap-2 border border-gray-800 transition-colors">
-                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
-                  <path d="M3,5.27V18.73L16.55,12L3,5.27M17.87,11.33L19.5,12.16L17.87,13L16.9,12.16L17.87,11.33M3,3.15L16.27,9.75L18.47,7.55L3,3.15M3,20.85L18.47,16.45L16.27,14.25L3,20.85Z" />
-                </svg>
-                <div className="text-[10px] text-left">
-                  <span className="block text-[8px] text-gray-400">GET IT ON</span>
-                  <span className="font-bold">Google Play</span>
-                </div>
-              </a>
+          <div className="mt-6 flex flex-wrap items-center gap-6 text-sm text-gray-600">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {["A", "K", "M"].map((item) => (
+                  <div
+                    key={item}
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white bg-[#1d1138] text-xs font-bold text-white shadow"
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <div>
+                <p className="font-semibold text-[#1d1138]">12.000+ kullanıcı</p>
+                <p className="text-xs text-gray-500">
+                  {locale === "tr" ? "İlk sürüm için güçlü başlangıç" : "A strong start for the first release"}
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-col text-sm text-gray-600 font-semibold">
-              <div className="flex items-center text-[#ffc600]">
-                {Array(5).fill(0).map((_, i) => (
-                  <svg key={i} className="w-4 h-4 fill-current" viewBox="0 0 20 20">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-                <span className="ml-2 text-xs font-bold text-gray-700">4.6/5</span>
-              </div>
-              <span className="text-[10px] text-gray-400 font-bold uppercase">{locale === "tr" ? "100.000+ Değerlendirme" : "from 100 000+ ratings in app stores"}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[#ffc600]">★★★★★</span>
+              <span className="font-semibold text-[#1d1138]">4.9/5</span>
+              <span className="text-xs text-gray-500">
+                {locale === "tr" ? "kiralama memnuniyeti" : "rental satisfaction"}
+              </span>
             </div>
           </div>
         </div>
 
-        {/* Right Phone Mockup */}
-        <div className="lg:col-span-5 flex justify-center lg:justify-end">
-          <div className="relative w-[280px] h-[560px] bg-black rounded-sm p-3 shadow-2xl border-4 border-gray-800">
-            {/* Speaker & Camera notch */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-sm z-20 flex items-center justify-center">
-              <div className="w-12 h-1 bg-gray-800 rounded-sm" />
-              <div className="w-3.5 h-3.5 bg-gray-900 rounded-sm ml-4" />
-            </div>
+        <div className="lg:col-span-5">
+          <div className="relative mx-auto flex max-w-[420px] justify-center">
+            <div className="absolute -left-8 top-10 h-28 w-28 rounded-3xl bg-[rgba(180,0,180,0.14)] blur-2xl" />
+            <div className="absolute -right-2 top-24 h-40 w-40 rounded-full bg-[rgba(29,17,56,0.12)] blur-2xl" />
 
-            {/* Screen */}
-            <div className="w-full h-full bg-slate-50 rounded-sm overflow-hidden relative flex flex-col pt-8">
-              {/* Map mockup interface */}
-              <div className="absolute inset-0 bg-purple-50">
-                {/* Dot markers */}
-                <div className="absolute top-24 left-16 w-3 h-3 bg-[var(--primary-purple)] rounded-sm border border-white animate-pulse" />
-                <div className="absolute top-36 right-12 w-3 h-3 bg-[var(--primary-purple)] rounded-sm border border-white" />
-                <div className="absolute bottom-40 left-12 w-3 h-3 bg-[var(--primary-purple)] rounded-sm border border-white" />
-                <div className="absolute bottom-48 right-20 w-3 h-3 bg-[var(--primary-purple)] rounded-sm border border-white" />
-
-                {/* Main bubble */}
-                <div className="absolute top-[160px] right-24 bg-[var(--primary-purple)] text-white text-[10px] font-bold px-3 py-1.5 rounded-sm border-2 border-white shadow-md">
-                  €29 <span className="text-[8px] font-normal">/ day</span>
+            <div className="relative w-full rounded-[36px] border border-white/70 bg-gradient-to-b from-[#1d1138] to-[#27184b] p-5 shadow-[0_30px_80px_rgba(29,17,56,0.2)]">
+              <div className="rounded-[28px] bg-white p-4">
+                <div className="flex items-center justify-between text-xs font-semibold text-gray-500">
+                  <span>Current position</span>
+                  <span>Today</span>
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {Array.from({ length: 9 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-10 rounded-2xl ${
+                        i % 3 === 0 ? "bg-[rgba(180,0,180,0.16)]" : i % 2 === 0 ? "bg-gray-100" : "bg-[rgba(109,46,240,0.12)]"
+                      }`}
+                    />
+                  ))}
                 </div>
 
-                {/* Car card at the bottom */}
-                <div className="absolute bottom-4 left-3 right-3 bg-white rounded-sm p-3 shadow-lg border border-gray-100">
-                  <div className="aspect-[16/10] bg-gray-100 rounded-sm overflow-hidden relative mb-2">
-                    {/* Simulated Car image */}
-                    <div className="w-full h-full bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-100 to-purple-200 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-purple-700">Mini Cooper</span>
+                <div className="mt-5 flex items-center justify-between rounded-2xl border border-gray-100 bg-[#faf9fd] p-3">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500">From</p>
+                    <p className="text-sm font-bold text-[#1d1138]">€29 / day</p>
+                  </div>
+                  <div className="h-10 w-10 rounded-full bg-[linear-gradient(135deg,#b400b4,#6d2ef0)] text-white flex items-center justify-center font-bold">
+                    →
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 overflow-hidden rounded-[28px] border border-white/10 bg-white/10 p-4 backdrop-blur">
+                <div className="aspect-[4/3] rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(255,255,255,0.82))] p-4 shadow-inner">
+                  <div className="relative h-full rounded-[20px] bg-[linear-gradient(135deg,#dfe8ff,#f6f0ff)] p-4">
+                    <div className="absolute right-4 top-4 rounded-2xl bg-white/90 px-3 py-1 text-xs font-bold text-[#1d1138] shadow">
+                      Mini Cooper
+                    </div>
+                    <div className="absolute left-4 top-6 rounded-full bg-[var(--primary-purple)] px-3 py-1 text-xs font-bold text-white shadow-lg">
+                      4.8 ★
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 rounded-[20px] bg-white/95 p-3 shadow-xl">
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-20 rounded-2xl bg-[linear-gradient(135deg,#eef2ff,#d6dcff)]" />
+                        <div className="flex-1">
+                          <p className="text-sm font-bold text-[#1d1138]">Renault Twingo</p>
+                          <p className="text-xs text-gray-500">Paylaşımlı araç, anında rezervasyon</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <h4 className="text-sm font-bold text-gray-800">Mini Cooper</h4>
-                  <div className="flex items-center text-[#ffc600] mt-0.5">
-                    {Array(5).fill(0).map((_, i) => (
-                      <svg key={i} className="w-3 h-3 fill-current" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                    ))}
-                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-3 text-white">
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                  <p className="text-2xl font-black">250+</p>
+                  <p className="text-xs text-white/70">araç</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                  <p className="text-2xl font-black">78</p>
+                  <p className="text-xs text-white/70">şehir bölgesi</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                  <p className="text-2xl font-black">%96</p>
+                  <p className="text-xs text-white/70">tamamlama</p>
                 </div>
               </div>
             </div>
@@ -177,4 +235,3 @@ export function Hero({ messages, locale }: HeroProps) {
     </section>
   );
 }
-
