@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { CarCard } from "@/components/car/CarCard";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
-const MapView = dynamic(
-  () => import("@/components/map/MapView").then((m) => m.MapView),
-  { ssr: false }
-);
+const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
+  ssr: false,
+});
 
 interface Car {
   id: string;
@@ -52,7 +51,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
     geo.requestLocation();
   }, [geo.requestLocation]);
 
-  async function loadCars() {
+  const loadCars = useCallback(async () => {
     setLoading(true);
     try {
       const searchParams = new URLSearchParams();
@@ -68,11 +67,11 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
     } finally {
       setLoading(false);
     }
-  }
+  }, [maxPrice, minPrice, transmissionFilter]);
 
   useEffect(() => {
     loadCars();
-  }, [minPrice, maxPrice, transmissionFilter]);
+  }, [loadCars]);
 
   const handleCarClick = useCallback((id: string) => {
     setSelectedCarId(id);
@@ -86,28 +85,28 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
   };
 
   return (
-    <div className="w-full min-h-screen bg-white pt-16 flex flex-col">
-      <div className="border-b border-gray-100 py-3 px-6 bg-white sticky top-16 z-30 flex flex-wrap gap-2 items-center">
+    <div className="flex min-h-screen w-full flex-col bg-white pt-16">
+      <div className="sticky top-16 z-30 flex flex-wrap items-center gap-2 border-b border-gray-100 bg-white px-6 py-3">
         <div className="relative">
           <button
             onClick={() => setActiveFilter(activeFilter === "price" ? null : "price")}
-            className={`px-4 py-2 rounded-sm text-xs font-bold border transition-all ${
+            className={`border px-4 py-2 text-xs font-bold transition-all ${
               activeFilter === "price" || minPrice || maxPrice
-                ? "bg-[var(--primary-purple)] text-white border-transparent"
-                : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
-            }`}
+                ? "border-transparent bg-[var(--primary-purple)] text-white"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+            } rounded-none`}
           >
             Fiyat
           </button>
           {activeFilter === "price" && (
-            <div className="absolute top-full left-0 mt-2 bg-white border border-gray-100 rounded-sm p-4 shadow-lg z-40 min-w-[240px]">
-              <div className="flex gap-2 items-center">
+            <div className="absolute left-0 top-full z-40 mt-2 min-w-[240px] rounded-none border border-gray-100 bg-white p-4 shadow-lg">
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   placeholder="Min"
                   value={minPrice}
                   onChange={(e) => setMinPrice(e.target.value)}
-                  className="w-full border border-gray-200 rounded-sm px-3 py-2 text-sm"
+                  className="w-full rounded-none border border-gray-200 px-3 py-2 text-sm"
                 />
                 <span className="text-gray-400">-</span>
                 <input
@@ -115,12 +114,12 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
                   placeholder="Max"
                   value={maxPrice}
                   onChange={(e) => setMaxPrice(e.target.value)}
-                  className="w-full border border-gray-200 rounded-sm px-3 py-2 text-sm"
+                  className="w-full rounded-none border border-gray-200 px-3 py-2 text-sm"
                 />
               </div>
               <button
                 onClick={handlePriceFilter}
-                className="mt-3 w-full bg-black text-white text-sm font-medium py-2 rounded-sm hover:bg-gray-800 transition-colors"
+                className="mt-3 w-full rounded-none bg-black py-2 text-sm font-medium text-white transition-colors hover:bg-gray-800"
               >
                 Uygula
               </button>
@@ -134,38 +133,40 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
               const newVal = transmissionFilter === "AUTOMATIC" ? "" : "AUTOMATIC";
               setTransmissionFilter(newVal);
             }}
-            className={`px-4 py-2 rounded-sm text-xs font-bold border transition-all ${
+            className={`border px-4 py-2 text-xs font-bold transition-all ${
               transmissionFilter
-                ? "bg-[var(--primary-purple)] text-white border-transparent"
-                : "bg-white text-gray-700 border-gray-200 hover:border-gray-400"
-            }`}
+                ? "border-transparent bg-[var(--primary-purple)] text-white"
+                : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+            } rounded-none`}
           >
             {transmissionFilter ? "Otomatik" : "Vites Tipi"}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
-        <div className="w-full lg:w-[55%] p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
-          <div className="mb-6">
+      <div className="flex flex-1 flex-col lg:flex-row">
+        <div className="w-full overflow-y-auto p-4 lg:w-[42%] lg:p-5 xl:w-[38%] max-h-[calc(100vh-8rem)]">
+          <div className="mb-5">
             <h2 className="text-xl font-extrabold text-[#1d1138]">
-              {loading ? "Loading listings..." : `${cars.length} araç bulundu`}
+              {loading ? "Loading listings..." : `${cars.length} arac bulundu`}
             </h2>
           </div>
 
           {loading ? (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-100 rounded-[28px] h-72 animate-pulse" />
+                <div key={i} className="h-56 animate-pulse rounded-none bg-gray-100" />
               ))}
             </div>
           ) : cars.length === 0 ? (
-            <div className="text-center py-20 bg-gray-50 rounded-sm">
-              <h3 className="text-lg font-semibold text-gray-900">Araç bulunamadı</h3>
-              <p className="text-gray-600 mt-2">Filtreleri kaldırarak tüm araçları görüntüleyebilirsiniz.</p>
+            <div className="rounded-none bg-gray-50 py-20 text-center">
+              <h3 className="text-lg font-semibold text-gray-900">Arac bulunamadi</h3>
+              <p className="mt-2 text-gray-600">
+                Filtreleri kaldirarak tum araclari goruntuleyebilirsiniz.
+              </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-4">
               {cars.map((car) => (
                 <div
                   key={car.id}
@@ -175,14 +176,14 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
                     selectedCarId === car.id ? "ring-2 ring-[var(--primary-purple)]" : ""
                   }`}
                 >
-                  <CarCard car={car} t={(key) => key} locale={locale} />
+                  <CarCard car={car} t={(key) => key} locale={locale} compact />
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        <div className="hidden lg:block lg:w-[45%] h-[calc(100vh-8rem)] sticky top-32 z-10 p-6 bg-gray-50 border-l border-gray-100">
+        <div className="hidden h-[calc(100vh-8rem)] border-l border-gray-100 bg-gray-50 p-4 lg:sticky lg:top-32 lg:block lg:w-[58%] xl:w-[62%]">
           <MapView
             cars={cars.map((c) => ({
               id: c.id,

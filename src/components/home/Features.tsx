@@ -47,11 +47,10 @@ export function Features({ messages }: FeaturesProps) {
   ];
 
   return (
-    <section className="relative overflow-hidden py-24">
-      <div className="absolute inset-0 bg-gradient-to-b from-white via-[#fcf9ff] to-white" />
-      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <section className="py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-full border border-[rgba(180,0,180,0.15)] bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-[var(--primary-purple)] shadow-sm">
+          <span className="inline-flex rounded-none border border-gray-200 bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
             {t("home.how_it_works")}
           </span>
           <h2 className="mt-5 text-3xl font-black tracking-tight text-[#1d1138] sm:text-4xl">
@@ -62,35 +61,29 @@ export function Features({ messages }: FeaturesProps) {
 
         <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
           {features.map((feature, i) => (
-            <div
-              key={i}
-              className="group relative overflow-hidden rounded-[28px] border border-gray-100 bg-white p-8 shadow-[0_18px_60px_rgba(29,17,56,0.08)] transition hover:-translate-y-1 hover:shadow-[0_24px_80px_rgba(29,17,56,0.12)]"
-            >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(180,0,180,0.1),transparent_42%)] opacity-0 transition group-hover:opacity-100" />
-              <div className="relative">
-                <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,rgba(180,0,180,0.12),rgba(109,46,240,0.1))] text-[var(--primary-purple)]">
-                  {feature.icon}
-                </div>
-                <h3 className="mt-6 text-xl font-bold text-[#1d1138]">{feature.title}</h3>
-                <p className="mt-3 leading-7 text-gray-600">{feature.desc}</p>
+            <div key={i} className="group border border-gray-200 bg-white p-8 shadow-[0_18px_50px_rgba(29,17,56,0.06)]">
+              <div className="inline-flex h-16 w-16 items-center justify-center border border-gray-200 bg-gray-50 text-[var(--primary-purple)]">
+                {feature.icon}
               </div>
+              <h3 className="mt-6 text-xl font-bold text-[#1d1138]">{feature.title}</h3>
+              <p className="mt-3 leading-7 text-gray-600">{feature.desc}</p>
             </div>
           ))}
         </div>
 
-        <div className="mt-10 rounded-[28px] border border-gray-100 bg-[#1d1138] px-6 py-5 text-white shadow-[0_18px_60px_rgba(29,17,56,0.15)]">
+        <div className="mt-10 border border-gray-200 bg-[#1d1138] px-6 py-5 text-white">
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <p className="text-2xl font-black text-[var(--primary-purple)]">24/7</p>
-              <p className="mt-1 text-sm text-white/75">Kesintisiz araç bul ve listele</p>
+              <p className="text-2xl font-black text-white">24/7</p>
+              <p className="mt-1 text-sm text-white/75">Kesintisiz arac bul ve listele</p>
             </div>
             <div>
-              <p className="text-2xl font-black text-[var(--primary-purple)]">Anlık</p>
-              <p className="mt-1 text-sm text-white/75">Rezervasyon ve onay akışları</p>
+              <p className="text-2xl font-black text-white">Anlik</p>
+              <p className="mt-1 text-sm text-white/75">Rezervasyon ve onay akisleri</p>
             </div>
             <div>
-              <p className="text-2xl font-black text-[var(--primary-purple)]">Yerel</p>
-              <p className="mt-1 text-sm text-white/75">Türkiye şehirlerine göre optimize edildi</p>
+              <p className="text-2xl font-black text-white">Yerel</p>
+              <p className="mt-1 text-sm text-white/75">Turkiye sehirlerine gore optimize edildi</p>
             </div>
           </div>
         </div>
