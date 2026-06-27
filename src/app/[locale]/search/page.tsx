@@ -50,23 +50,19 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
 
   useEffect(() => {
     geo.requestLocation();
-  }, []);
+  }, [geo.requestLocation]);
 
   async function loadCars() {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (minPrice) params.set("minPrice", minPrice);
-      if (maxPrice) params.set("maxPrice", maxPrice);
-      if (transmissionFilter) params.set("transmission", transmissionFilter);
+      const searchParams = new URLSearchParams();
+      if (minPrice) searchParams.set("minPrice", minPrice);
+      if (maxPrice) searchParams.set("maxPrice", maxPrice);
+      if (transmissionFilter) searchParams.set("transmission", transmissionFilter);
 
-      const res = await fetch(`/api/cars?${params.toString()}`);
+      const res = await fetch(`/api/cars?${searchParams.toString()}`);
       const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        setCars(data);
-      } else {
-        setCars([]);
-      }
+      setCars(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error("Failed to load cars", err);
     } finally {
@@ -91,7 +87,6 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
 
   return (
     <div className="w-full min-h-screen bg-white pt-16 flex flex-col">
-      {/* Top Filter Bar */}
       <div className="border-b border-gray-100 py-3 px-6 bg-white sticky top-16 z-30 flex flex-wrap gap-2 items-center">
         <div className="relative">
           <button
@@ -123,7 +118,10 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
                   className="w-full border border-gray-200 rounded-sm px-3 py-2 text-sm"
                 />
               </div>
-              <button onClick={handlePriceFilter} className="mt-3 w-full bg-black text-white text-sm font-medium py-2 rounded-sm hover:bg-gray-800 transition-colors">
+              <button
+                onClick={handlePriceFilter}
+                className="mt-3 w-full bg-black text-white text-sm font-medium py-2 rounded-sm hover:bg-gray-800 transition-colors"
+              >
                 Uygula
               </button>
             </div>
@@ -147,9 +145,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
         </div>
       </div>
 
-      {/* Main Container */}
       <div className="flex-1 flex flex-col lg:flex-row">
-        {/* Left Column (List) */}
         <div className="w-full lg:w-[55%] p-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
           <div className="mb-6">
             <h2 className="text-xl font-extrabold text-[#1d1138]">
@@ -158,9 +154,9 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-5">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-gray-100 rounded-sm h-80 animate-pulse" />
+                <div key={i} className="bg-gray-100 rounded-[28px] h-72 animate-pulse" />
               ))}
             </div>
           ) : cars.length === 0 ? (
@@ -169,13 +165,13 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
               <p className="text-gray-600 mt-2">Filtreleri kaldırarak tüm araçları görüntüleyebilirsiniz.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="flex flex-col gap-5">
               {cars.map((car) => (
                 <div
                   key={car.id}
                   id={`car-${car.id}`}
                   onClick={() => setSelectedCarId(car.id)}
-                  className={`cursor-pointer rounded-sm transition-all ${
+                  className={`cursor-pointer transition-all ${
                     selectedCarId === car.id ? "ring-2 ring-[var(--primary-purple)]" : ""
                   }`}
                 >
@@ -186,7 +182,6 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
           )}
         </div>
 
-        {/* Right Column (Map) */}
         <div className="hidden lg:block lg:w-[45%] h-[calc(100vh-8rem)] sticky top-32 z-10 p-6 bg-gray-50 border-l border-gray-100">
           <MapView
             cars={cars.map((c) => ({
@@ -203,7 +198,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
             }))}
             onCarClick={handleCarClick}
             selectedCarId={selectedCarId}
-            userLocation={geo.latitude && geo.longitude ? [geo.latitude, geo.longitude] : null}
+            userLocation={geo.latitude !== null && geo.longitude !== null ? [geo.latitude, geo.longitude] : null}
             onLocateMe={geo.requestLocation}
             locating={geo.loading}
           />
@@ -212,4 +207,3 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
     </div>
   );
 }
-

@@ -23,8 +23,12 @@ interface CarCardProps {
   locale: string;
 }
 
+const FALLBACK_IMAGE =
+  "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80";
+
 export function CarCard({ car, t, locale }: CarCardProps) {
-  const primaryImage = car.images.find((img) => img.isPrimary)?.url || car.images[0]?.url || "";
+  const primaryImage =
+    car.images.find((img) => img.isPrimary)?.url || car.images[0]?.url || FALLBACK_IMAGE;
   const rating = car.rating || 4.65;
   const reviewsCount = car.reviewsCount || 42;
   const distance = car.distance || "1.2 km";
@@ -39,22 +43,14 @@ export function CarCard({ car, t, locale }: CarCardProps) {
       className="group flex flex-col bg-white rounded-sm border border-gray-100 overflow-hidden hover:shadow-lg transition-all"
     >
       <div className="aspect-[16/10] bg-gray-100 overflow-hidden relative">
-        {primaryImage ? (
-          <img
-            src={primaryImage}
-            alt={`${car.brand} ${car.model}`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&w=600&q=80";
-            }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
-          </div>
-        )}
+        <img
+          src={primaryImage}
+          alt={`${car.brand} ${car.model}`}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = FALLBACK_IMAGE;
+          }}
+        />
         
         {hasConnect && (
           <span className="absolute top-3 left-3 bg-white text-[#1d1138] text-[10px] font-extrabold px-2.5 py-1 rounded-sm uppercase tracking-wider shadow-sm">
@@ -101,4 +97,3 @@ export function CarCard({ car, t, locale }: CarCardProps) {
     </Link>
   );
 }
-
