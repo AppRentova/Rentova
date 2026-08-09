@@ -14,78 +14,65 @@ interface FeaturesProps {
   messages: Record<string, any>;
 }
 
+const visualImage =
+  "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=1100&q=80";
+
 export function Features({ messages }: FeaturesProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
   const features = [
     {
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
+      icon: ":-)",
       title: t("home.feature_hourly"),
       desc: t("home.feature_hourly_desc"),
     },
     {
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-        </svg>
-      ),
+      icon: "[]",
       title: t("home.feature_no_wait"),
       desc: t("home.feature_no_wait_desc"),
     },
     {
-      icon: (
-        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-        </svg>
-      ),
+      icon: "car",
       title: t("home.feature_app"),
       desc: t("home.feature_app_desc"),
     },
   ];
 
   return (
-    <section className="py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-none border border-gray-200 bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
-            {t("home.how_it_works")}
-          </span>
-          <h2 className="mt-5 text-3xl font-black tracking-tight text-[#1d1138] sm:text-4xl">
-            {t("home.featured_title")}
+    <section className="border-y border-gray-100 bg-white py-24 dark:border-white/10 dark:bg-[#0c0c12]">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
+        <div className="group overflow-hidden border border-gray-200 bg-gray-100 shadow-[0_24px_70px_rgba(17,24,39,0.10)] dark:border-white/10 dark:bg-white/10">
+          <img src={visualImage} alt="People picking up a shared rental car" className="h-full min-h-[420px] w-full object-cover transition duration-700 group-hover:scale-105" />
+        </div>
+
+        <div className="flex flex-col justify-center">
+          <h2 className="max-w-xl text-4xl font-black leading-tight text-[#1d1138] dark:text-white sm:text-5xl">
+            Discover the new way <span className="block text-[var(--primary-purple)]">to rent a car</span>
           </h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600">{t("home.featured_subtitle")}</p>
-        </div>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-700 dark:text-gray-300">
+            Choose from cars available from private and professional owners near you. Search, book, unlock and return from one flow.
+          </p>
 
-        <div className="mt-14 grid grid-cols-1 gap-6 md:grid-cols-3">
-          {features.map((feature, i) => (
-            <div key={i} className="group border border-gray-200 bg-white p-8 shadow-[0_18px_50px_rgba(29,17,56,0.06)]">
-              <div className="inline-flex h-16 w-16 items-center justify-center border border-gray-200 bg-gray-50 text-[var(--primary-purple)]">
-                {feature.icon}
+          <div className="mt-8 space-y-6">
+            {features.map((feature) => (
+              <div key={feature.title} className="grid grid-cols-[40px_1fr] gap-4 transition hover:translate-x-1">
+                <div className="flex h-10 w-10 items-center justify-center border border-[var(--primary-purple)] text-xs font-black text-[var(--primary-purple)] transition hover:bg-[var(--primary-purple)] hover:text-white">
+                  {feature.icon}
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#1d1138] dark:text-white">{feature.title}</h3>
+                  <p className="mt-2 leading-7 text-gray-700 dark:text-gray-300">{feature.desc}</p>
+                </div>
               </div>
-              <h3 className="mt-6 text-xl font-bold text-[#1d1138]">{feature.title}</h3>
-              <p className="mt-3 leading-7 text-gray-600">{feature.desc}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-10 border border-gray-200 bg-[#1d1138] px-6 py-5 text-white">
-          <div className="grid gap-4 md:grid-cols-3">
-            <div>
-              <p className="text-2xl font-black text-white">24/7</p>
-              <p className="mt-1 text-sm text-white/75">Kesintisiz arac bul ve listele</p>
-            </div>
-            <div>
-              <p className="text-2xl font-black text-white">Anlik</p>
-              <p className="mt-1 text-sm text-white/75">Rezervasyon ve onay akisleri</p>
-            </div>
-            <div>
-              <p className="text-2xl font-black text-white">Yerel</p>
-              <p className="mt-1 text-sm text-white/75">Turkiye sehirlerine gore optimize edildi</p>
-            </div>
+            ))}
           </div>
+
+          <a
+            href="#categories"
+            className="mt-8 inline-flex w-fit items-center gap-3 border-2 border-[var(--primary-purple)] px-8 py-4 text-base font-extrabold text-[var(--primary-purple)] transition hover:bg-[var(--primary-purple)] hover:text-white"
+          >
+            See how it works
+            <span aria-hidden>→</span>
+          </a>
         </div>
       </div>
     </section>

@@ -147,6 +147,14 @@ export default function ListYourCarPage({
     }
   }
 
+  function handleUseGpsLocation() {
+    geo.requestLocation();
+    setForm((prev) => ({
+      ...prev,
+      address: `GPS konumu: ${geo.center[0].toFixed(5)}, ${geo.center[1].toFixed(5)}`,
+    }));
+  }
+
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
@@ -223,8 +231,23 @@ export default function ListYourCarPage({
             />
           </section>
 
-          <section className="bg-white border border-gray-100 rounded-sm p-6 space-y-4">
+          <section className="bg-white border border-gray-100 rounded-sm p-6 space-y-4 dark:border-white/10 dark:bg-[#151522]">
             <h2 className="text-lg font-semibold text-gray-900">Konum ve fiyat</h2>
+            <div className="flex flex-col gap-3 border border-gray-200 bg-[#eef7f5] p-4 dark:border-white/10 dark:bg-[#12312d] sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-bold text-[#0f766e] dark:text-[#7dd3c7]">GPS ile arac konumunu kullan</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Koordinat: {geo.center[0].toFixed(5)}, {geo.center[1].toFixed(5)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleUseGpsLocation}
+                className="border border-[#0f766e] px-4 py-2 text-sm font-black text-[#0f766e] transition hover:bg-[#0f766e] hover:text-white dark:text-[#7dd3c7]"
+              >
+                {geo.loading ? "Konum aliniyor" : "GPS konumunu al"}
+              </button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Sehir"

@@ -27,16 +27,16 @@ export function CarCategories({ messages, locale }: CarCategoriesProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
 
   return (
-    <section className="py-24">
+    <section id="categories" className="bg-white py-24 dark:bg-[#0c0c12]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="inline-flex rounded-none border border-gray-200 bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-500">
+          <span className="inline-flex rounded-none border border-gray-200 bg-white px-4 py-1 text-xs font-bold uppercase tracking-[0.25em] text-gray-500 dark:border-white/10 dark:bg-[#151522] dark:text-gray-300">
             {t("home.categories_title")}
           </span>
-          <h2 className="mt-5 text-3xl font-black tracking-tight text-[#1d1138] sm:text-4xl">
+          <h2 className="mt-5 text-3xl font-black tracking-tight text-[#1d1138] dark:text-white sm:text-4xl">
             {locale === "tr" ? "Ihtiyacina uygun araci sec" : "Choose a car for every plan"}
           </h2>
-          <p className="mt-4 text-lg leading-8 text-gray-600">
+          <p className="mt-4 text-lg leading-8 text-gray-600 dark:text-gray-300">
             {locale === "tr"
               ? "Sehir ici pratik araclardan aile yolculuklarina kadar her senaryo icin duzenlenmis koleksiyonlar."
               : "Curated collections for everything from city trips to family road journeys."}
@@ -48,14 +48,14 @@ export function CarCategories({ messages, locale }: CarCategoriesProps) {
             <Link
               key={cat.key}
               href={`/${locale}/search?type=${cat.key}`}
-              className="group border border-gray-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(29,17,56,0.08)]"
+              className="group border border-gray-200 bg-white p-6 transition hover:-translate-y-1 hover:shadow-[0_16px_40px_rgba(29,17,56,0.08)] dark:border-white/10 dark:bg-[#151522]"
             >
-              <div className="flex h-16 w-16 items-center justify-center border border-gray-200 bg-gray-50 text-3xl">
+              <div className="flex h-16 w-16 items-center justify-center border border-gray-200 bg-gray-50 text-3xl dark:border-white/10 dark:bg-white/10">
                 {cat.icon}
               </div>
               <div className="mt-5">
-                <p className="text-lg font-bold text-[#1d1138]">{t(`home.${cat.key}`)}</p>
-                <p className="mt-2 text-sm leading-6 text-gray-500">
+                <p className="text-lg font-bold text-[#1d1138] dark:text-white">{t(`home.${cat.key}`)}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
                   {locale === "tr" ? "Hizli kesif" : "Quick discovery"}
                 </p>
               </div>

@@ -5,6 +5,20 @@
   --foreground: #171717;
   --primary-purple: #b400b4;
   --primary-purple-hover: #960096;
+  --surface: #ffffff;
+  --surface-muted: #f6f6f8;
+  --border-soft: #e5e7eb;
+}
+
+.dark {
+  --background: #0c0c12;
+  --foreground: #f5f6fb;
+  --primary-purple: #d100d1;
+  --primary-purple-hover: #f000f0;
+  --surface: #12121a;
+  --surface-muted: #191925;
+  --border-soft: rgba(255, 255, 255, 0.12);
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -20,6 +34,17 @@ body {
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   scroll-behavior: smooth;
+}
+
+.dark .leaflet-container {
+  background: #ffffff;
+}
+
+.dark .leaflet-control-zoom a,
+.dark .leaflet-popup-content-wrapper {
+  background: #ffffff;
+  color: #1d1138;
+  border-color: #e5e7eb;
 }
 
 /* Custom Hide Scrollbar style */
@@ -54,6 +79,11 @@ body {
   cursor: pointer;
 }
 
+.dark .price-bubble {
+  border-color: #151522;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
 .price-bubble:hover {
   background-color: #960096;
   transform: scale(1.05);
@@ -63,4 +93,81 @@ body {
   background-color: #1d1138;
   color: #ffffff;
   z-index: 1000;
+}
+
+.rentova-popup {
+  width: 240px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #ffffff;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+.rentova-popup-image {
+  position: relative;
+  height: 132px;
+  background: #f3f4f6;
+}
+
+.rentova-popup-image img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
+.rentova-popup-image span {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  background: #ffffff;
+  color: #1d1138;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 3px 7px;
+  text-transform: uppercase;
+}
+
+.rentova-popup-body {
+  padding: 12px;
+}
+
+.rentova-popup-body h4 {
+  color: #1d1138;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.rentova-popup-rating {
+  color: #7e22ce;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.rentova-popup-price {
+  align-items: baseline;
+  border-top: 1px solid #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  font-weight: 700;
+  gap: 4px;
+  margin-top: 10px;
+  padding-top: 8px;
+}
+
+.rentova-popup-price span {
+  text-decoration: line-through;
+}
+
+.rentova-popup-price strong {
+  color: #1d1138;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.rentova-popup-price em {
+  font-style: normal;
 }

@@ -15,13 +15,13 @@ export function Button({
   disabled,
   ...props
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center font-medium rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const base = "inline-flex items-center justify-center font-medium rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-[#0c0c12]";
 
   const variants = {
-    primary: "bg-black text-white hover:bg-gray-800 focus:ring-black",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-black",
-    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
+    primary: "bg-black text-white hover:bg-gray-800 focus:ring-black dark:bg-white dark:text-[#101018] dark:hover:bg-gray-200",
+    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-white/10 dark:text-white dark:hover:bg-white/15",
+    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-black dark:border-white/15 dark:text-gray-100 dark:hover:bg-white/10",
+    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-100 dark:hover:bg-white/10",
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
   };
 

@@ -6,16 +6,20 @@ import { carSchema } from "@/lib/validations";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const city = searchParams.get("city");
+    const city = searchParams.get("city") || searchParams.get("q");
     const minPrice = searchParams.get("minPrice");
     const maxPrice = searchParams.get("maxPrice");
     const transmission = searchParams.get("transmission");
     const seats = searchParams.get("seats");
+    const lat = searchParams.get("lat");
+    const lng = searchParams.get("lng");
+    const userLat = lat ? Number(lat) : null;
+    const userLng = lng ? Number(lng) : null;
 
     const where: any = { isActive: true };
 
     if (city) {
-      where.city = { contains: city, mode: "insensitive" };
+      where.city = { contains: city };
     }
 
     if (minPrice || maxPrice) {
@@ -42,7 +46,33 @@ export async function GET(request: Request) {
       take: 50,
     });
 
-    return NextResponse.json(cars);
+    const withDistance = cars
+      .map((car) => {
+        if (userLat === null || userLng === null || Number.isNaN(userLat) || Number.isNaN(userLng)) {
+          return car;
+        }
+
+        const toRad = (value: number) => (value * Math.PI) / 180;
+        const earthRadiusKm = 6371;
+        const dLat = toRad(car.lat - userLat);
+        const dLng = toRad(car.lng - userLng);
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos(toRad(userLat)) * Math.cos(toRad(car.lat)) * Math.sin(dLng / 2) ** 2;
+        const distanceKm = earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return {
+          ...car,
+          distanceKm,
+          distance: distanceKm < 1 ? `${Math.round(distanceKm * 1000)} m` : `${distanceKm.toFixed(1)} km`,
+        };
+      })
+      .sort((a: any, b: any) => {
+        if (a.distanceKm === undefined || b.distanceKm === undefined) return 0;
+        return a.distanceKm - b.distanceKm;
+      });
+
+    return NextResponse.json(withDistance);
   } catch (error) {
     console.error("Cars fetch error:", error);
     return NextResponse.json(

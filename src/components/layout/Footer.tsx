@@ -19,48 +19,48 @@ interface FooterProps {
 export function Footer({ messages, locale }: FooterProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
   return (
-    <footer className="bg-gray-50 border-t border-gray-100">
+    <footer className="border-t border-gray-100 bg-gray-50 dark:border-white/10 dark:bg-[#101018]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <span className="text-xl font-bold text-black">Rentova</span>
-            <p className="mt-3 text-sm text-gray-600 leading-relaxed">
+            <span className="text-xl font-bold text-black dark:text-white">Rentova</span>
+            <p className="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-300">
               {t("footer.about_desc")}
             </p>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">{t("footer.about")}</h3>
+            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">{t("footer.about")}</h3>
             <ul className="space-y-3">
-              <li><Link href={`/${locale}`} className="text-sm text-gray-600 hover:text-black">{t("footer.how_it_works")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.trust")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.mobile_apps")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.contact")}</Link></li>
+              <li><Link href={`/${locale}`} className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.how_it_works")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.trust")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.mobile_apps")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.contact")}</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">{t("footer.resources")}</h3>
+            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">{t("footer.resources")}</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.insurance")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.help_center")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">Blog</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.insurance")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.help_center")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">Blog</Link></li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-4">{t("footer.legal")}</h3>
+            <h3 className="mb-4 text-sm font-semibold text-gray-900 dark:text-white">{t("footer.legal")}</h3>
             <ul className="space-y-3">
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.privacy")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.terms")}</Link></li>
-              <li><Link href="#" className="text-sm text-gray-600 hover:text-black">{t("footer.cookies")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.privacy")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.terms")}</Link></li>
+              <li><Link href="#" className="text-sm text-gray-600 hover:text-black dark:text-gray-300 dark:hover:text-white">{t("footer.cookies")}</Link></li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 pt-8 border-t border-gray-200">
+        <div className="mt-10 border-t border-gray-200 pt-8 dark:border-white/10">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               &copy; {new Date().getFullYear()} Rentova. {t("footer.rights")}
             </p>
             <div className="flex gap-4">

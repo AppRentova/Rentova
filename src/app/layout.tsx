@@ -33,7 +33,9 @@ export default async function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-white font-sans antialiased">{children}</body>
+      <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased transition-colors">
+        {children}
+      </body>
     </html>
   );
 }

@@ -1,105 +1,120 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isBefore, isAfter, addDays } from "date-fns";
-import { tr, enUS } from "date-fns/locale";
+import { useEffect, useRef, useState } from "react";
+import {
+  addDays,
+  addMonths,
+  eachDayOfInterval,
+  endOfMonth,
+  format,
+  isAfter,
+  isBefore,
+  isSameDay,
+  startOfDay,
+  startOfMonth,
+} from "date-fns";
+import { enUS, tr } from "date-fns/locale";
 
 interface DateTimePickerProps {
   locale: string;
   startDate: Date;
   endDate: Date;
   onChange: (start: Date, end: Date) => void;
-  isOpen?: boolean;
 }
 
-export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTimePickerProps) {
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState<"start" | "end" | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  
-  const currentLocale = locale === "tr" ? tr : enUS;
+const timesList = Array.from({ length: 48 }, (_, index) => {
+  const hour = Math.floor(index / 2).toString().padStart(2, "0");
+  const minute = index % 2 === 0 ? "00" : "30";
+  return `${hour}:${minute}`;
+});
 
-  // Generate times from 00:00 to 23:30 in 30-min intervals
-  const generateTimes = () => {
-    const times = [];
-    for (let h = 0; h < 24; h++) {
-      const hourStr = h.toString().padStart(2, "0");
-      times.push(`${hourStr}:00`);
-      times.push(`${hourStr}:30`);
-    }
-    return times;
-  };
-  const timesList = generateTimes();
+export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTimePickerProps) {
+  const [openPanel, setOpenPanel] = useState<"date" | "start" | "end" | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const containerRef = useRef<HTMLDivElement>(null);
+  const currentLocale = locale === "tr" ? tr : enUS;
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowDatePicker(false);
-        setShowTimePicker(null);
+        setOpenPanel(null);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const nextMonth = addMonths(currentMonth, 1);
+  const selectDay = (day: Date) => {
+    if (isBefore(day, startOfDay(new Date()))) return;
+    if (isBefore(day, startDate) || !isSameDay(startDate, endDate)) {
+      const nextStart = new Date(day);
+      nextStart.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
+      const nextEnd = addDays(nextStart, 2);
+      nextEnd.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
+      onChange(nextStart, nextEnd);
+      return;
+    }
+
+    const nextEnd = new Date(day);
+    nextEnd.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
+    onChange(startDate, nextEnd);
+    setOpenPanel(null);
+  };
+
+  const selectTime = (type: "start" | "end", value: string) => {
+    const [hours, minutes] = value.split(":").map(Number);
+    const nextStart = new Date(startDate);
+    const nextEnd = new Date(endDate);
+
+    if (type === "start") {
+      nextStart.setHours(hours, minutes, 0, 0);
+    } else {
+      nextEnd.setHours(hours, minutes, 0, 0);
+    }
+
+    onChange(nextStart, nextEnd);
+    setOpenPanel(null);
+  };
 
   const renderCalendar = (monthDate: Date) => {
-    const start = startOfMonth(monthDate);
-    const end = endOfMonth(monthDate);
-    const days = eachDayOfInterval({ start, end });
-    
-    // Add empty slots for offset
-    const dayOfWeek = start.getDay(); // 0 is Sunday, 1 is Monday...
-    const offset = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Align to Monday start
-    const emptyDays = Array(offset).fill(null);
-
-    const weekDays = locale === "tr" ? ["Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
+    const monthStart = startOfMonth(monthDate);
+    const days = eachDayOfInterval({ start: monthStart, end: endOfMonth(monthDate) });
+    const offset = monthStart.getDay() === 0 ? 6 : monthStart.getDay() - 1;
+    const weekDays = locale === "tr" ? ["Pt", "Sa", "Ca", "Pe", "Cu", "Ct", "Pz"] : ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
     return (
-      <div className="w-[300px] flex-shrink-0">
-        <h3 className="text-center font-bold text-gray-800 mb-4 capitalize">
+      <div className="min-w-[280px]">
+        <h3 className="mb-4 text-center text-base font-black capitalize text-[#111827] dark:text-white">
           {format(monthDate, "MMMM yyyy", { locale: currentLocale })}
         </h3>
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-gray-400 mb-2">
-          {weekDays.map((d) => (
-            <div key={d}>{d}</div>
+        <div className="mb-2 grid grid-cols-7 text-center text-xs font-bold text-gray-400">
+          {weekDays.map((day) => (
+            <span key={day}>{day}</span>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
-          {emptyDays.map((_, i) => (
-            <div key={`empty-${i}`} />
+          {Array.from({ length: offset }).map((_, index) => (
+            <span key={`empty-${index}`} />
           ))}
           {days.map((day) => {
-            const isSelected = isSameDay(day, startDate) || isSameDay(day, endDate);
-            const isInRange = isAfter(day, startDate) && isBefore(day, endDate);
-            const isPast = isBefore(day, startOfMonth(new Date())) || (isBefore(day, new Date()) && !isSameDay(day, new Date()));
-            
+            const selected = isSameDay(day, startDate) || isSameDay(day, endDate);
+            const inRange = isAfter(day, startDate) && isBefore(day, endDate);
+            const disabled = isBefore(day, startOfDay(new Date()));
+
             return (
               <button
-                key={day.toString()}
-                onClick={() => {
-                  if (isPast) return;
-                  if (isSameDay(day, startDate)) return;
-                  
-                  if (!startDate || (startDate && endDate)) {
-                    onChange(day, addDays(day, 1));
-                  } else if (isBefore(day, startDate)) {
-                    onChange(day, addDays(day, 1));
-                  } else {
-                    onChange(startDate, day);
-                  }
-                }}
-                disabled={isPast}
-                className={`h-9 w-9 text-xs rounded-sm flex items-center justify-center transition-all ${
-                  isSelected 
-                    ? "bg-[var(--primary-purple)] text-white font-bold"
-                    : isInRange
-                    ? "bg-purple-100 text-[var(--primary-purple)] font-semibold"
-                    : isPast
-                    ? "text-gray-300 cursor-not-allowed"
-                    : "text-gray-700 hover:bg-gray-100"
+                key={day.toISOString()}
+                type="button"
+                disabled={disabled}
+                onClick={() => selectDay(day)}
+                className={`h-10 text-sm font-bold transition ${
+                  selected
+                    ? "bg-[var(--primary-purple)] text-white"
+                    : inRange
+                      ? "bg-[#f1e8ff] text-[var(--primary-purple)] dark:bg-white/10"
+                      : disabled
+                        ? "text-gray-300 dark:text-gray-700"
+                        : "text-[#111827] hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-white/10"
                 }`}
               >
                 {format(day, "d")}
@@ -111,101 +126,68 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
     );
   };
 
-  const handleTimeSelect = (type: "start" | "end", timeStr: string) => {
-    const [hours, minutes] = timeStr.split(":").map(Number);
-    if (type === "start") {
-      const newStart = new Date(startDate);
-      newStart.setHours(hours, minutes, 0, 0);
-      onChange(newStart, endDate);
-    } else {
-      const newEnd = new Date(endDate);
-      newEnd.setHours(hours, minutes, 0, 0);
-      onChange(startDate, newEnd);
-    }
-    setShowTimePicker(null);
-  };
-
   return (
-    <div ref={containerRef} className="relative w-full flex flex-col md:flex-row gap-3">
-      {/* Date Pickers fields */}
-      <div className="flex-1 grid grid-cols-2 gap-2 border border-gray-300 rounded-sm px-4 py-1.5 bg-gray-50 focus-within:ring-2 focus-within:ring-[var(--primary-purple)] focus-within:border-transparent">
-        {/* Pickup Field */}
-        <div 
-          onClick={() => { setShowDatePicker(true); setShowTimePicker(null); }}
-          className="cursor-pointer py-1 border-r border-gray-200"
+    <div ref={containerRef} className="relative z-[90] w-full">
+      <div className="grid gap-2 md:grid-cols-[1fr_180px_180px]">
+        <button
+          type="button"
+          onClick={() => setOpenPanel(openPanel === "date" ? null : "date")}
+          className="grid grid-cols-2 border border-gray-200 bg-white text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#101018]"
         >
-          <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-            {locale === "tr" ? "ALIŞ" : "PICKUP"}
+          <span className="border-r border-gray-200 px-4 py-3 dark:border-white/10">
+            <span className="block text-[10px] font-black uppercase text-gray-400">Alis</span>
+            <span className="text-sm font-black text-[#111827] dark:text-white">{format(startDate, "dd MMM yyyy")}</span>
           </span>
-          <span className="text-sm font-semibold text-gray-800">
-            {format(startDate, "dd MMM yyyy")}
+          <span className="px-4 py-3">
+            <span className="block text-[10px] font-black uppercase text-gray-400">Iade</span>
+            <span className="text-sm font-black text-[#111827] dark:text-white">{format(endDate, "dd MMM yyyy")}</span>
           </span>
-        </div>
-        
-        {/* Return Field */}
-        <div 
-          onClick={() => { setShowDatePicker(true); setShowTimePicker(null); }}
-          className="cursor-pointer py-1 pl-3"
-        >
-          <span className="block text-[10px] text-gray-400 font-bold uppercase tracking-wider">
-            {locale === "tr" ? "İADE" : "RETURN"}
-          </span>
-          <span className="text-sm font-semibold text-gray-800">
-            {format(endDate, "dd MMM yyyy")}
-          </span>
-        </div>
-      </div>
+        </button>
 
-      {/* Time Picker Fields */}
-      <div className="w-full md:w-auto grid grid-cols-2 gap-2">
-        <div 
-          onClick={() => setShowTimePicker("start")}
-          className="cursor-pointer border border-gray-300 rounded-sm px-5 py-2.5 bg-gray-50 text-sm font-semibold text-gray-800 text-center hover:bg-gray-100 min-w-[90px]"
+        <button
+          type="button"
+          onClick={() => setOpenPanel(openPanel === "start" ? null : "start")}
+          className="border border-gray-200 bg-white px-4 py-3 text-sm font-black text-[#111827] transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#101018] dark:text-white"
         >
           {format(startDate, "HH:mm")}
-        </div>
-        <div 
-          onClick={() => setShowTimePicker("end")}
-          className="cursor-pointer border border-gray-300 rounded-sm px-5 py-2.5 bg-gray-50 text-sm font-semibold text-gray-800 text-center hover:bg-gray-100 min-w-[90px]"
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpenPanel(openPanel === "end" ? null : "end")}
+          className="border border-gray-200 bg-white px-4 py-3 text-sm font-black text-[#111827] transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#101018] dark:text-white"
         >
           {format(endDate, "HH:mm")}
-        </div>
+        </button>
       </div>
 
-      {/* Date Dropdown Modal */}
-      {showDatePicker && (
-        <div className="absolute top-full left-0 mt-2 bg-white rounded-sm shadow-xl border border-gray-100 p-6 z-50 flex gap-6 overflow-x-auto max-w-[95vw] md:max-w-none">
-          {renderCalendar(currentMonth)}
-          {renderCalendar(nextMonth)}
-          
-          <button 
-            type="button"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="absolute right-4 top-4 p-1.5 rounded-sm hover:bg-gray-100 text-gray-600"
-          >
-            →
-          </button>
-          <button 
-            type="button"
-            onClick={() => setCurrentMonth(addMonths(currentMonth, -1))}
-            className="absolute left-4 top-4 p-1.5 rounded-sm hover:bg-gray-100 text-gray-600"
-          >
-            ←
-          </button>
+      {openPanel === "date" && (
+        <div className="absolute left-0 top-full z-[120] mt-3 w-[min(720px,calc(100vw-2rem))] border border-gray-200 bg-white p-5 shadow-[0_30px_90px_rgba(17,24,39,0.22)] dark:border-white/10 dark:bg-[#151522]">
+          <div className="mb-4 flex items-center justify-between">
+            <button type="button" onClick={() => setCurrentMonth(addMonths(currentMonth, -1))} className="border border-gray-200 px-3 py-2 font-black dark:border-white/10">
+              ←
+            </button>
+            <p className="text-sm font-bold text-gray-500 dark:text-gray-300">Tarih araligini sec</p>
+            <button type="button" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="border border-gray-200 px-3 py-2 font-black dark:border-white/10">
+              →
+            </button>
+          </div>
+          <div className="flex gap-6 overflow-x-auto">
+            {renderCalendar(currentMonth)}
+            {renderCalendar(addMonths(currentMonth, 1))}
+          </div>
         </div>
       )}
 
-      {/* Time Picker Dropdown Modal */}
-      {showTimePicker && (
-        <div className="absolute top-full right-0 mt-2 bg-white rounded-sm shadow-xl border border-gray-100 py-2 w-48 max-h-60 overflow-y-auto z-50">
-          {timesList.map((timeStr) => (
+      {(openPanel === "start" || openPanel === "end") && (
+        <div className="absolute right-0 top-full z-[120] mt-3 grid max-h-72 w-52 grid-cols-2 gap-1 overflow-y-auto border border-gray-200 bg-white p-2 shadow-[0_30px_90px_rgba(17,24,39,0.22)] dark:border-white/10 dark:bg-[#151522]">
+          {timesList.map((time) => (
             <button
-              key={timeStr}
+              key={time}
               type="button"
-              onClick={() => handleTimeSelect(showTimePicker, timeStr)}
-              className="w-full px-4 py-2 text-left text-sm font-semibold text-gray-700 hover:bg-purple-50 hover:text-[var(--primary-purple)]"
+              onClick={() => selectTime(openPanel, time)}
+              className="px-3 py-2 text-sm font-bold text-[#111827] transition hover:bg-[#eef7f5] hover:text-[#0f766e] dark:text-gray-100 dark:hover:bg-white/10"
             >
-              {timeStr}
+              {time}
             </button>
           ))}
         </div>
