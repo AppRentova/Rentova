@@ -24,7 +24,7 @@ interface DateTimePickerProps {
   onChange: (start: Date, end: Date) => void;
 }
 
-type Panel = "date" | "start-time" | "end-time" | null;
+type Panel = "date" | "time" | null;
 
 const TIME_SLOTS = Array.from({ length: 48 }, (_, index) => {
   const hour = String(Math.floor(index / 2)).padStart(2, "0");
@@ -69,6 +69,16 @@ function ChevronRight() {
   );
 }
 
+function formatRangeLabel(locale: string, startDate: Date, endDate: Date) {
+  const localeData = locale === "tr" ? tr : enUS;
+  const pattern = locale === "tr" ? "d MMM yyyy" : "MMM d, yyyy";
+  return `${format(startDate, pattern, { locale: localeData })} - ${format(endDate, pattern, { locale: localeData })}`;
+}
+
+function formatTimeRange(startDate: Date, endDate: Date) {
+  return `${format(startDate, "HH:mm")} - ${format(endDate, "HH:mm")}`;
+}
+
 function DayCell({
   day,
   monthDate,
@@ -84,18 +94,18 @@ function DayCell({
   locale: string;
   onSelect: (day: Date) => void;
 }) {
+  const localeData = locale === "tr" ? tr : enUS;
   const today = normalizeDay(new Date());
   const dayOnly = normalizeDay(day);
   const start = normalizeDay(startDate);
   const end = normalizeDay(endDate);
   const isStart = isSameDay(dayOnly, start);
   const isEnd = isSameDay(dayOnly, end);
-  const isSameRangeDay = isSameDay(start, end);
   const inRange = isAfter(dayOnly, start) && isBefore(dayOnly, end);
   const isToday = isSameDay(dayOnly, today);
   const disabled = isBefore(dayOnly, today);
   const outsideMonth = !isSameMonth(dayOnly, monthDate);
-  const localeData = locale === "tr" ? tr : enUS;
+  const sameDayRange = isSameDay(start, end);
 
   const classes = [
     "relative flex h-10 items-center justify-center text-sm font-semibold transition",
@@ -119,8 +129,8 @@ function DayCell({
     classes.push("ring-1 ring-inset ring-[var(--primary-purple)]");
   }
 
-  if (inRange && isStart && !isSameRangeDay) classes.push("rounded-l-full");
-  if (inRange && isEnd && !isSameRangeDay) classes.push("rounded-r-full");
+  if (inRange && isStart && !sameDayRange) classes.push("rounded-l-full");
+  if (inRange && isEnd && !sameDayRange) classes.push("rounded-r-full");
 
   return (
     <button
@@ -146,11 +156,8 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
   const weekStartsOn = locale === "tr" ? 1 : 0;
   const weekLabels = locale === "tr" ? WEEK_LABELS.tr : WEEK_LABELS.en;
 
-  const selectedRangeLabel = useMemo(() => {
-    const startLabel = format(startDate, locale === "tr" ? "d MMM yyyy" : "MMM d, yyyy", { locale: localeData });
-    const endLabel = format(endDate, locale === "tr" ? "d MMM yyyy" : "MMM d, yyyy", { locale: localeData });
-    return `${startLabel} - ${endLabel}`;
-  }, [endDate, locale, localeData, startDate]);
+  const selectedRangeLabel = useMemo(() => formatRangeLabel(locale, startDate, endDate), [endDate, locale, startDate]);
+  const selectedTimeLabel = useMemo(() => formatTimeRange(startDate, endDate), [endDate, startDate]);
 
   useEffect(() => {
     function handleOutsideClick(event: MouseEvent) {
@@ -178,15 +185,7 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
 
     if (isBefore(dayOnly, today)) return;
 
-    if (rangeStage === "start") {
-      const nextStart = mergeDayAndTime(dayOnly, startDate);
-      const nextEnd = mergeDayAndTime(dayOnly, startDate);
-      onChange(nextStart, nextEnd);
-      setRangeStage("end");
-      return;
-    }
-
-    if (isBefore(dayOnly, normalizeDay(startDate))) {
+    if (rangeStage === "start" || isBefore(dayOnly, normalizeDay(startDate))) {
       const nextStart = mergeDayAndTime(dayOnly, startDate);
       const nextEnd = mergeDayAndTime(dayOnly, startDate);
       onChange(nextStart, nextEnd);
@@ -200,12 +199,12 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
     setOpenPanel(null);
   };
 
-  const selectTime = (panel: "start-time" | "end-time", value: string) => {
+  const selectTime = (type: "start" | "end", value: string) => {
     const [hours, minutes] = value.split(":").map(Number);
     const nextStart = cloneDate(startDate);
     const nextEnd = cloneDate(endDate);
 
-    if (panel === "start-time") {
+    if (type === "start") {
       nextStart.setHours(hours, minutes, 0, 0);
       nextEnd.setHours(hours, minutes, 0, 0);
     } else {
@@ -244,50 +243,30 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
     );
   };
 
-  const timePanelTitle = openPanel === "start-time" ? (locale === "tr" ? "Alis saati" : "Pickup time") : locale === "tr" ? "Iade saati" : "Return time";
-  const activeTime = openPanel === "start-time" ? startDate : endDate;
+  const timePanelTitle = locale === "tr" ? "Saat araligi" : "Time range";
 
   return (
     <div ref={rootRef} className="relative z-[120] w-full">
-      <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+      <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <button
           type="button"
           onClick={() => {
             setOpenPanel((previous) => (previous === "date" ? null : "date"));
             setRangeStage("start");
           }}
-          className="grid min-h-16 grid-cols-2 border border-slate-200 bg-white text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#13131c]"
+          className="flex min-h-16 flex-col justify-center border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#13131c]"
         >
-          <span className="border-r border-slate-200 px-4 py-3 dark:border-white/10">
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{locale === "tr" ? "Alis" : "Pickup"}</span>
-            <span className="mt-1 block text-sm font-semibold text-slate-900 dark:text-white">
-              {format(startDate, locale === "tr" ? "d MMM yyyy" : "MMM d, yyyy", { locale: localeData })}
-            </span>
-          </span>
-          <span className="px-4 py-3">
-            <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{locale === "tr" ? "Iade" : "Return"}</span>
-            <span className="mt-1 block text-sm font-semibold text-slate-900 dark:text-white">
-              {format(endDate, locale === "tr" ? "d MMM yyyy" : "MMM d, yyyy", { locale: localeData })}
-            </span>
-          </span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{locale === "tr" ? "Tarih araligi" : "Date range"}</span>
+          <span className="mt-1 block text-sm font-semibold text-slate-900 dark:text-white">{selectedRangeLabel}</span>
         </button>
 
         <button
           type="button"
-          onClick={() => setOpenPanel((previous) => (previous === "start-time" ? null : "start-time"))}
-          className="border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#13131c]"
+          onClick={() => setOpenPanel((previous) => (previous === "time" ? null : "time"))}
+          className="flex min-h-16 flex-col justify-center border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#13131c]"
         >
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{locale === "tr" ? "Alis saati" : "Pickup"}</span>
-          <span className="mt-1 block text-base font-semibold text-slate-900 dark:text-white">{format(startDate, "HH:mm")}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setOpenPanel((previous) => (previous === "end-time" ? null : "end-time"))}
-          className="border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#13131c]"
-        >
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{locale === "tr" ? "Iade saati" : "Return"}</span>
-          <span className="mt-1 block text-base font-semibold text-slate-900 dark:text-white">{format(endDate, "HH:mm")}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{timePanelTitle}</span>
+          <span className="mt-1 block text-sm font-semibold text-slate-900 dark:text-white">{selectedTimeLabel}</span>
         </button>
       </div>
 
@@ -333,36 +312,77 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
         </div>
       )}
 
-      {(openPanel === "start-time" || openPanel === "end-time") && (
-        <div className="absolute right-0 top-full mt-3 w-[min(320px,calc(100vw-2rem))] rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_30px_90px_-30px_rgba(15,23,42,0.5)] dark:border-white/10 dark:bg-[#171724]">
+      {openPanel === "time" && (
+        <div className="absolute left-0 top-full mt-3 w-[min(640px,calc(100vw-2rem))] rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-[0_30px_90px_-30px_rgba(15,23,42,0.5)] dark:border-white/10 dark:bg-[#171724]">
           <div className="mb-4 border-b border-slate-200 pb-3 dark:border-white/10">
             <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">{timePanelTitle}</p>
-            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-              {format(activeTime, "d MMM yyyy", { locale: localeData })} - {locale === "tr" ? "Secimden sonra kapanir" : "Closes after selection"}
-            </p>
+            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{selectedRangeLabel}</p>
           </div>
-          <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1">
-            {TIME_SLOTS.map((time) => {
-              const active = format(activeTime, "HH:mm") === time;
-              return (
-                <button
-                  key={time}
-                  type="button"
-                  onClick={() => selectTime(openPanel as "start-time" | "end-time", time)}
-                  className={[
-                    "rounded-xl border px-3 py-2.5 text-sm font-semibold transition",
-                    active
-                      ? "border-[var(--primary-purple)] bg-[var(--primary-purple)] text-white"
-                      : "border-slate-200 bg-slate-50 text-slate-900 hover:border-[var(--primary-purple)] hover:bg-white dark:border-white/10 dark:bg-[#12121a] dark:text-slate-100 dark:hover:bg-white/5",
-                  ].join(" ")}
-                >
-                  {time}
-                </button>
-              );
-            })}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <TimeColumn
+              title={locale === "tr" ? "Alis saati" : "Pickup time"}
+              value={format(startDate, "HH:mm")}
+              locale={locale}
+              onSelect={(time) => selectTime("start", time)}
+            />
+            <TimeColumn
+              title={locale === "tr" ? "Iade saati" : "Return time"}
+              value={format(endDate, "HH:mm")}
+              locale={locale}
+              onSelect={(time) => selectTime("end", time)}
+            />
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function TimeColumn({
+  title,
+  value,
+  locale,
+  onSelect,
+}: {
+  title: string;
+  value: string;
+  locale: string;
+  onSelect: (time: string) => void;
+}) {
+  const localeData = locale === "tr" ? tr : enUS;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-white/10 dark:bg-[#12121a]">
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">{title}</p>
+          <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            {locale === "tr" ? "Seçili" : "Selected"}: {value}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid max-h-72 grid-cols-2 gap-2 overflow-y-auto pr-1">
+        {TIME_SLOTS.map((time) => {
+          const active = value === time;
+          return (
+            <button
+              key={time}
+              type="button"
+              onClick={() => onSelect(time)}
+              className={[
+                "rounded-xl border px-3 py-2.5 text-sm font-semibold transition",
+                active
+                  ? "border-[var(--primary-purple)] bg-[var(--primary-purple)] text-white"
+                  : "border-slate-200 bg-white text-slate-900 hover:border-[var(--primary-purple)] hover:bg-white dark:border-white/10 dark:bg-[#171724] dark:text-slate-100 dark:hover:bg-white/5",
+              ].join(" ")}
+            >
+              {time}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
