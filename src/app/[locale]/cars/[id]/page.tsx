@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import { Button } from "@/components/ui";
+import { DateTimePicker, Button } from "@/components/ui";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
@@ -45,6 +45,13 @@ interface CarDetail {
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1600&q=80";
 
+function createBookingDate(offsetDays: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offsetDays);
+  date.setHours(9, 0, 0, 0);
+  return date;
+}
+
 function Icon({ name }: { name: "check" | "pin" | "seat" | "gear" | "fuel" | "calendar" | "bolt" | "clock" }) {
   const paths = {
     check: "M5 13l4 4L19 7",
@@ -69,8 +76,8 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
   const [car, setCar] = useState<CarDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [locale, setLocale] = useState("tr");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState(() => createBookingDate(1));
+  const [endDate, setEndDate] = useState(() => createBookingDate(3));
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -109,7 +116,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
       const res = await fetch("/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ carId: car.id, startDate, endDate }),
+        body: JSON.stringify({ carId: car.id, startDate: startDate.toISOString(), endDate: endDate.toISOString() }),
       });
 
       if (!res.ok) {
@@ -127,9 +134,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
   }
 
   const days =
-    startDate && endDate
-      ? Math.max(0, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
-      : 0;
+    startDate && endDate ? Math.max(0, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))) : 0;
 
   const totalPrice = car && days > 0 ? days * car.pricePerDay : 0;
   const gallery = useMemo(() => {
@@ -376,8 +381,15 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : (
                 <form onSubmit={handleBooking} className="mt-6 space-y-4">
-                  <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-white/10 dark:bg-[#101018] dark:text-white" required min={new Date().toISOString().split("T")[0]} />
-                  <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full border border-gray-300 bg-white px-4 py-2.5 text-sm dark:border-white/10 dark:bg-[#101018] dark:text-white" required min={startDate || new Date().toISOString().split("T")[0]} />
+                  <DateTimePicker
+                    locale={locale}
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={(nextStart, nextEnd) => {
+                      setStartDate(nextStart);
+                      setEndDate(nextEnd);
+                    }}
+                  />
 
                   {days > 0 && (
                     <div className="space-y-2 bg-gray-50 p-4 text-sm dark:bg-white/10">

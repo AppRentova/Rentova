@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  addDays,
   addMonths,
   eachDayOfInterval,
   endOfMonth,
@@ -30,6 +29,7 @@ const timesList = Array.from({ length: 48 }, (_, index) => {
 
 export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTimePickerProps) {
   const [openPanel, setOpenPanel] = useState<"date" | "start" | "end" | null>(null);
+  const [rangeStage, setRangeStage] = useState<"start" | "end">("start");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const containerRef = useRef<HTMLDivElement>(null);
   const currentLocale = locale === "tr" ? tr : enUS;
@@ -38,26 +38,41 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setOpenPanel(null);
+        setRangeStage("start");
       }
     }
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const syncTime = (source: Date, target: Date) => {
+    target.setHours(source.getHours(), source.getMinutes(), 0, 0);
+    return target;
+  };
+
   const selectDay = (day: Date) => {
     if (isBefore(day, startOfDay(new Date()))) return;
-    if (isBefore(day, startDate) || !isSameDay(startDate, endDate)) {
-      const nextStart = new Date(day);
-      nextStart.setHours(startDate.getHours(), startDate.getMinutes(), 0, 0);
-      const nextEnd = addDays(nextStart, 2);
-      nextEnd.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
+
+    if (rangeStage === "start") {
+      const nextStart = syncTime(startDate, new Date(day));
+      const nextEnd = syncTime(endDate, new Date(day));
       onChange(nextStart, nextEnd);
+      setRangeStage("end");
       return;
     }
 
-    const nextEnd = new Date(day);
-    nextEnd.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
+    if (isBefore(day, startDate)) {
+      const nextStart = syncTime(startDate, new Date(day));
+      const nextEnd = syncTime(endDate, new Date(day));
+      onChange(nextStart, nextEnd);
+      setRangeStage("end");
+      return;
+    }
+
+    const nextEnd = syncTime(endDate, new Date(day));
     onChange(startDate, nextEnd);
+    setRangeStage("start");
     setOpenPanel(null);
   };
 
@@ -68,8 +83,12 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
 
     if (type === "start") {
       nextStart.setHours(hours, minutes, 0, 0);
+      nextEnd.setHours(hours, minutes, 0, 0);
     } else {
       nextEnd.setHours(hours, minutes, 0, 0);
+      if (nextEnd <= nextStart) {
+        nextStart.setHours(hours, minutes, 0, 0);
+      }
     }
 
     onChange(nextStart, nextEnd);
@@ -131,7 +150,13 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
       <div className="grid gap-2 md:grid-cols-[1fr_180px_180px]">
         <button
           type="button"
-          onClick={() => setOpenPanel(openPanel === "date" ? null : "date")}
+          onClick={() => {
+            setOpenPanel((prev) => {
+              const next = prev === "date" ? null : "date";
+              if (next === "date") setRangeStage("start");
+              return next;
+            });
+          }}
           className="grid grid-cols-2 border border-gray-200 bg-white text-left transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#101018]"
         >
           <span className="border-r border-gray-200 px-4 py-3 dark:border-white/10">
