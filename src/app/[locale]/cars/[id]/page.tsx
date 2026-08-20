@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { DateTimePicker, Button } from "@/components/ui";
+import { CarCard } from "@/components/car/CarCard";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
@@ -40,6 +41,25 @@ interface CarDetail {
     createdAt: string;
     reviewer: { name: string; image: string | null };
   }[];
+}
+
+interface ListedCar {
+  id: string;
+  brand: string;
+  model: string;
+  year: number;
+  transmission: string;
+  fuelType: string;
+  seats: number;
+  pricePerHour: number;
+  pricePerDay: number;
+  city: string;
+  images: { url: string; isPrimary: boolean }[];
+  owner: { name: string };
+  rating?: number;
+  reviewsCount?: number;
+  distance?: string;
+  hasConnect?: boolean;
 }
 
 const FALLBACK_IMAGE =
@@ -82,6 +102,7 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
   const [bookingError, setBookingError] = useState("");
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [mainImage, setMainImage] = useState(0);
+  const [nearbyCars, setNearbyCars] = useState<ListedCar[]>([]);
   const geo = useGeolocation();
 
   useEffect(() => {
@@ -104,6 +125,27 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
     }
     loadCar();
   }, [params]);
+
+  useEffect(() => {
+    if (!car?.city) return;
+
+    const city = car.city;
+    const carId = car.id;
+
+    async function loadNearbyCars() {
+      try {
+        const res = await fetch(`/api/cars?city=${encodeURIComponent(city)}`);
+        if (!res.ok) return;
+
+        const data = (await res.json()) as ListedCar[];
+        setNearbyCars(data.filter((item) => item.id !== carId).slice(0, 4));
+      } catch (err) {
+        console.error("Failed to load nearby cars", err);
+      }
+    }
+
+    loadNearbyCars();
+  }, [car?.city, car?.id]);
 
   async function handleBooking(e: React.FormEvent) {
     e.preventDefault();
@@ -360,6 +402,29 @@ export default function CarDetailPage({ params }: { params: Promise<{ id: string
               <p className="text-sm text-gray-500 dark:text-gray-400">VAT number: TR0000000000</p>
             </div>
           </section>
+
+          {nearbyCars.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-end justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-extrabold">Ayni bolgedeki diger araclar</h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{car.city} icinde listelenen alternatifler</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/${locale}/search?city=${encodeURIComponent(car.city)}`)}
+                  className="shrink-0 text-sm font-bold text-[var(--primary-purple)]"
+                >
+                  Tumunu gor
+                </button>
+              </div>
+              <div className="grid gap-4 md:grid-cols-2">
+                {nearbyCars.map((listedCar) => (
+                  <CarCard key={listedCar.id} car={listedCar} locale={locale} t={(key) => key} />
+                ))}
+              </div>
+            </section>
+          )}
         </div>
 
         <aside className="lg:col-span-1">

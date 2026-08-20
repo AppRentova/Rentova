@@ -177,8 +177,6 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
     }
   }, [openPanel, startDate]);
 
-  const monthOptions = useMemo(() => [currentMonth, addMonths(currentMonth, 1)], [currentMonth]);
-
   const selectDate = (day: Date) => {
     const today = startOfDay(new Date());
     const dayOnly = normalizeDay(day);
@@ -187,13 +185,13 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
 
     if (rangeStage === "start" || isBefore(dayOnly, normalizeDay(startDate))) {
       const nextStart = mergeDayAndTime(dayOnly, startDate);
-      const nextEnd = mergeDayAndTime(dayOnly, startDate);
+      const nextEnd = mergeDayAndTime(dayOnly, endDate);
       onChange(nextStart, nextEnd);
       setRangeStage("end");
       return;
     }
 
-    const nextEnd = mergeDayAndTime(dayOnly, startDate);
+    const nextEnd = mergeDayAndTime(dayOnly, endDate);
     onChange(startDate, nextEnd);
     setRangeStage("start");
     setOpenPanel(null);
@@ -206,12 +204,8 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
 
     if (type === "start") {
       nextStart.setHours(hours, minutes, 0, 0);
-      nextEnd.setHours(hours, minutes, 0, 0);
     } else {
       nextEnd.setHours(hours, minutes, 0, 0);
-      if (nextEnd <= nextStart) {
-        nextStart.setHours(hours, minutes, 0, 0);
-      }
     }
 
     onChange(nextStart, nextEnd);
@@ -271,15 +265,15 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
       </div>
 
       {openPanel === "date" && (
-        <div className="absolute left-0 top-full mt-3 w-[min(780px,calc(100vw-2rem))] rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] p-4 shadow-[0_30px_90px_-30px_rgba(15,23,42,0.5)] dark:border-white/10 dark:bg-[#12121a]">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 dark:border-white/10">
+        <div className="absolute left-0 top-full mt-3 w-[min(430px,calc(100vw-2rem))] rounded-[1.5rem] border border-slate-200 bg-[#f8fafc] p-4 shadow-[0_30px_90px_-30px_rgba(15,23,42,0.5)] dark:border-white/10 dark:bg-[#12121a]">
+          <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-200 pb-4 dark:border-white/10">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-slate-400 dark:text-slate-500">
                 {locale === "tr" ? "Secili aralik" : "Selected range"}
               </p>
               <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">{selectedRangeLabel}</p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 dark:border-white/10 dark:bg-[#171724]">
+            <div className="inline-flex shrink-0 items-center gap-1 rounded-full border border-slate-200 bg-white px-1 py-1 dark:border-white/10 dark:bg-[#171724]">
               <button
                 type="button"
                 onClick={() => setCurrentMonth((current) => addMonths(current, -1))}
@@ -287,13 +281,6 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
                 aria-label={locale === "tr" ? "Onceki ay" : "Previous month"}
               >
                 <ChevronLeft />
-              </button>
-              <button
-                type="button"
-                onClick={() => setCurrentMonth(startOfMonth(startDate))}
-                className="min-w-28 px-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-              >
-                {format(currentMonth, "LLLL", { locale: localeData })}
               </button>
               <button
                 type="button"
@@ -306,9 +293,7 @@ export function DateTimePicker({ locale, startDate, endDate, onChange }: DateTim
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            {monthOptions.map((month) => renderMonth(month))}
-          </div>
+          {renderMonth(currentMonth)}
         </div>
       )}
 
