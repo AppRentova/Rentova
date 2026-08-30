@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useState } from "react";
 
 interface GeolocationState {
   latitude: number | null;
@@ -23,7 +23,7 @@ export function useGeolocation() {
     if (!navigator.geolocation) {
       setState((prev) => ({
         ...prev,
-        error: "Tarayıcınız konum özelliğini desteklemiyor.",
+        error: "Tarayiciniz konum ozelligini desteklemiyor.",
         loading: false,
       }));
       return;
@@ -41,10 +41,10 @@ export function useGeolocation() {
         });
       },
       (err) => {
-        let error = "Konum alınamadı.";
-        if (err.code === 1) error = "Konum izni reddedildi. Varsayılan konum (İzmir) kullanılıyor.";
-        else if (err.code === 2) error = "Konum bilgisi kullanılamıyor.";
-        else if (err.code === 3) error = "Konum isteği zaman aşımına uğradı.";
+        let error = "Konum alinamadi.";
+        if (err.code === 1) error = "Konum izni reddedildi. Varsayilan konum (Izmir) kullaniliyor.";
+        else if (err.code === 2) error = "Konum bilgisi kullanilamiyor.";
+        else if (err.code === 3) error = "Konum istegi zaman asimina ugradi.";
         setState({
           latitude: IZMIR[0],
           longitude: IZMIR[1],

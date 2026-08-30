@@ -1,7 +1,7 @@
-import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getSession } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardPage({ params }: { params: Promise<{ locale: string }> }) {
   const session = await getSession();
@@ -11,93 +11,67 @@ export default async function DashboardPage({ params }: { params: Promise<{ loca
     redirect(`/${locale}/auth/login`);
   }
 
-  const bookingsCount = await prisma.booking.count({
-    where: { renterId: session.userId },
-  });
+  const supabase = await createClient();
+  const [{ count: bookingsCount }, { count: carsCount }, { count: activeBookings }] = await Promise.all([
+    supabase.from("bookings").select("*", { count: "exact", head: true }).eq("renter_id", session.userId),
+    supabase.from("cars").select("*", { count: "exact", head: true }).eq("owner_id", session.userId),
+    supabase
+      .from("bookings")
+      .select("*", { count: "exact", head: true })
+      .eq("renter_id", session.userId)
+      .in("status", ["CONFIRMED", "ACTIVE"]),
+  ]);
 
-  const carsCount = await prisma.car.count({
-    where: { ownerId: session.userId },
-  });
-
-  const activeBookings = await prisma.booking.count({
-    where: {
-      renterId: session.userId,
-      status: { in: ["CONFIRMED", "ACTIVE"] },
-    },
-  });
+  const links = [
+    ["Rezervasyonlarim", "Tum rezervasyonlarini goruntule", `/${locale}/dashboard/bookings`],
+    ["Seyahatlerim", "Aktif ve gecmis kiralama akislari", `/${locale}/trips`],
+    ["Araclarim", "Arac ilanlarini yonet", `/${locale}/dashboard/cars`],
+    ["Profil", "Profil ve fotograf bilgilerini duzenle", `/${locale}/dashboard/profile`],
+    ["Mesajlar", "Kiraci ve arac sahibi gorusmeleri", `/${locale}/messages`],
+    ["Ayarlar", "Bildirim, odeme ve guvenlik tercihleri", `/${locale}/dashboard/settings`],
+    ["Arac Ekle", "Yeni bir arac listele", `/${locale}/list-your-car`],
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Panelim</h1>
+    <main className="min-h-screen bg-[#f4f1ea] px-4 py-24 text-[#130f1f] dark:bg-[#0b0b10] dark:text-white sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <div className="border-b border-[#130f1f]/10 pb-8 dark:border-white/10">
+          <p className="text-xs font-black uppercase tracking-[0.28em] text-[#653496]">Rentova Panel</p>
+          <h1 className="mt-2 text-4xl font-black tracking-[-0.04em]">Panelim</h1>
+          <p className="mt-3 max-w-2xl text-[#5b5668] dark:text-white/60">
+            Rezervasyonlarini, arac ilanlarini, profilini ve hesap ayarlarini tek yerden yonet.
+          </p>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
-        <div className="bg-white border border-gray-100 rounded-sm p-6 shadow-sm">
-          <p className="text-3xl font-bold text-gray-900">{bookingsCount}</p>
-          <p className="text-sm text-gray-600 mt-1">Toplam Rezervasyon</p>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {[
+            [bookingsCount ?? 0, "Toplam rezervasyon"],
+            [activeBookings ?? 0, "Aktif rezervasyon"],
+            [carsCount ?? 0, "Listelenen arac"],
+          ].map(([value, label]) => (
+            <div key={label} className="border border-[#130f1f]/10 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-[#12121a]">
+              <p className="text-4xl font-black tracking-tight">{value}</p>
+              <p className="mt-1 text-sm text-[#5b5668] dark:text-white/60">{label}</p>
+            </div>
+          ))}
         </div>
-        <div className="bg-white border border-gray-100 rounded-sm p-6 shadow-sm">
-          <p className="text-3xl font-bold text-green-600">{activeBookings}</p>
-          <p className="text-sm text-gray-600 mt-1">Aktif Rezervasyon</p>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-sm p-6 shadow-sm">
-          <p className="text-3xl font-bold text-gray-900">{carsCount}</p>
-          <p className="text-sm text-gray-600 mt-1">Listelenen Araç</p>
+
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          {links.map(([title, desc, href]) => (
+            <Link
+              key={href}
+              href={href}
+              className="flex items-center justify-between gap-5 border border-[#130f1f]/10 bg-white p-6 transition hover:-translate-y-0.5 hover:shadow-[10px_10px_0_rgba(19,15,31,0.10)] dark:border-white/10 dark:bg-[#12121a]"
+            >
+              <span>
+                <span className="block text-lg font-black">{title}</span>
+                <span className="mt-1 block text-sm text-[#5b5668] dark:text-white/60">{desc}</span>
+              </span>
+              <span className="text-2xl">+</span>
+            </Link>
+          ))}
         </div>
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Link
-          href={`/${locale}/dashboard/bookings`}
-          className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-sm hover:shadow-sm transition-shadow"
-        >
-          <div>
-            <h3 className="font-semibold text-gray-900">Rezervasyonlarım</h3>
-            <p className="text-sm text-gray-600 mt-1">Tüm rezervasyonlarınızı görüntüleyin</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-
-        <Link
-          href={`/${locale}/dashboard/cars`}
-          className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-sm hover:shadow-sm transition-shadow"
-        >
-          <div>
-            <h3 className="font-semibold text-gray-900">Araçlarım</h3>
-            <p className="text-sm text-gray-600 mt-1">Araçlarınızı yönetin</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-
-        <Link
-          href={`/${locale}/dashboard/profile`}
-          className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-sm hover:shadow-sm transition-shadow"
-        >
-          <div>
-            <h3 className="font-semibold text-gray-900">Profil</h3>
-            <p className="text-sm text-gray-600 mt-1">Profil bilgilerinizi düzenleyin</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-
-        <Link
-          href={`/${locale}/list-your-car`}
-          className="flex items-center justify-between p-6 bg-white border border-gray-100 rounded-sm hover:shadow-sm transition-shadow"
-        >
-          <div>
-            <h3 className="font-semibold text-gray-900">Araç Ekle</h3>
-            <p className="text-sm text-gray-600 mt-1">Yeni bir araç listeleyin</p>
-          </div>
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-      </div>
-    </div>
+    </main>
   );
 }

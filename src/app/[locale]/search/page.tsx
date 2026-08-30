@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
+import { addDays } from "date-fns";
 import { CarCard } from "@/components/car/CarCard";
+import { DateTimePicker } from "@/components/ui";
 import { useGeolocation } from "@/hooks/useGeolocation";
 
 const MapView = dynamic(() => import("@/components/map/MapView").then((m) => m.MapView), {
@@ -31,9 +33,13 @@ interface Car {
   hasConnect?: boolean;
 }
 
-const vehicleTypes = ["Commercial", "City", "Sedan", "Family", "Minibus", "4x4", "Coupe", "SUV"];
-const featureFilters = ["GPS", "Air conditioning", "Baby seat", "Bike rack"];
-const fuelTypes = ["Electric", "Hybrid", "Combustion"];
+const fuelOptions = [
+  { label: "Electric", value: "ELECTRIC" },
+  { label: "Hybrid", value: "HYBRID" },
+  { label: "Gasoline", value: "GASOLINE" },
+  { label: "Diesel", value: "DIESEL" },
+  { label: "LPG", value: "LPG" },
+];
 
 export default function SearchPage({ params }: { params: Promise<{ locale: string }> }) {
   const [cars, setCars] = useState<Car[]>([]);
@@ -44,7 +50,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
   const [maxPrice, setMaxPrice] = useState("");
   const [transmissionFilter, setTransmissionFilter] = useState("");
   const [seatFilter, setSeatFilter] = useState(2);
-  const [instantBooking, setInstantBooking] = useState(false);
+  const [fuelTypeFilter, setFuelTypeFilter] = useState<string[]>([]);
   const [newCarsOnly, setNewCarsOnly] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<"vehicle" | "pickup" | "price" | null>(null);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -55,6 +61,10 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
   const urlCity = urlParams.get("city") || urlParams.get("q") || "";
   const urlLat = urlParams.get("lat");
   const urlLng = urlParams.get("lng");
+  const urlStart = urlParams.get("start");
+  const urlEnd = urlParams.get("end");
+  const [startDate, setStartDate] = useState(() => (urlStart ? new Date(urlStart) : new Date()));
+  const [endDate, setEndDate] = useState(() => (urlEnd ? new Date(urlEnd) : addDays(new Date(), 2)));
 
   useEffect(() => {
     params.then((p) => setLocale(p.locale));
@@ -77,6 +87,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
       if (maxPrice) searchParams.set("maxPrice", maxPrice);
       if (transmissionFilter) searchParams.set("transmission", transmissionFilter);
       if (seatFilter > 2) searchParams.set("seats", String(seatFilter));
+      if (fuelTypeFilter.length > 0) searchParams.set("fuelType", fuelTypeFilter.join(","));
       if (urlCity) searchParams.set("city", urlCity);
       if (urlLat && urlLng) {
         searchParams.set("lat", urlLat);
@@ -95,7 +106,7 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
     } finally {
       setLoading(false);
     }
-  }, [geo.latitude, geo.longitude, maxPrice, minPrice, seatFilter, transmissionFilter, urlCity, urlLat, urlLng]);
+  }, [geo.latitude, geo.longitude, maxPrice, minPrice, seatFilter, transmissionFilter, fuelTypeFilter, urlCity, urlLat, urlLng]);
 
   useEffect(() => {
     loadCars();
@@ -130,16 +141,26 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
       <div className="sticky top-16 z-30 border-b border-gray-100 bg-white dark:border-white/10 dark:bg-[#101018]">
         <div className="flex flex-wrap items-center gap-3 px-5 py-3">
           <div className="flex min-w-[260px] flex-1 items-center gap-3 border border-gray-200 bg-white px-4 py-3 text-sm font-medium text-[#1d1138] dark:border-white/10 dark:bg-[#141420] dark:text-gray-100 lg:max-w-md">
-            <span className="text-[var(--primary-purple)]">⌖</span>
+            <svg className="h-4 w-4 text-[var(--primary-purple)]" viewBox="0 0 24 24" fill="none">
+              <path d="M12 21s7-5.2 7-11a7 7 0 10-14 0c0 5.8 7 11 7 11z" stroke="currentColor" strokeWidth="1.8" />
+              <path d="M12 13a3 3 0 100-6 3 3 0 000 6z" stroke="currentColor" strokeWidth="1.8" />
+            </svg>
             <span>{searchLabel}</span>
             <button type="button" className="ml-auto text-gray-400" aria-label="Clear location">
               x
             </button>
           </div>
 
-          <div className="grid w-full grid-cols-2 border border-gray-200 bg-white text-sm text-gray-600 dark:border-white/10 dark:bg-[#141420] dark:text-gray-300 sm:w-auto">
-            <button className="border-r border-gray-200 px-4 py-3 text-left dark:border-white/10">Pickup</button>
-            <button className="px-4 py-3 text-left">Return</button>
+          <div className="relative z-40 w-full sm:min-w-[460px] sm:flex-1 lg:max-w-[620px]">
+            <DateTimePicker
+              locale={locale}
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(start, end) => {
+                setStartDate(start);
+                setEndDate(end);
+              }}
+            />
           </div>
         </div>
 
@@ -160,35 +181,6 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
                 <button onClick={applyFilters} className="mt-3 w-full bg-[var(--primary-purple)] px-4 py-2 text-sm font-bold text-white">
                   Apply
                 </button>
-              </div>
-            )}
-          </div>
-
-          <div className="relative">
-            <button
-              onClick={() => setActiveDropdown(activeDropdown === "vehicle" ? null : "vehicle")}
-              className="border border-gray-200 bg-white px-4 py-2 text-sm font-bold text-[var(--primary-purple)] transition hover:border-[var(--primary-purple)] dark:border-white/10 dark:bg-[#141420]"
-            >
-              Vehicle type
-            </button>
-            {activeDropdown === "vehicle" && (
-              <div className="absolute left-0 top-full z-40 mt-2 w-[min(500px,92vw)] border border-gray-200 bg-white p-5 shadow-xl dark:border-white/10 dark:bg-[#151522]">
-                <p className="mb-4 text-xs font-extrabold uppercase text-gray-500">Vehicle type</p>
-                <div className="flex flex-wrap gap-2">
-                  {vehicleTypes.map((type) => (
-                    <button key={type} type="button" className="border border-gray-200 px-4 py-2 text-sm font-medium text-[#1d1138] dark:border-white/10 dark:text-gray-100">
-                      {type}
-                    </button>
-                  ))}
-                </div>
-                <div className="mt-8 flex justify-end gap-3">
-                  <button type="button" className="border border-gray-200 px-4 py-2 text-sm font-bold text-[var(--primary-purple)] dark:border-white/10" onClick={() => setActiveDropdown(null)}>
-                    Reset
-                  </button>
-                  <button type="button" className="bg-[var(--primary-purple)] px-5 py-2 text-sm font-bold text-white" onClick={applyFilters}>
-                    Apply
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -276,14 +268,6 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
             </div>
 
             <div className="space-y-8 px-6 py-6">
-              <label className="flex items-center justify-between gap-4">
-                <span>
-                  <span className="block font-bold text-[#1d1138] dark:text-white">Instant booking</span>
-                  <span className="block text-sm text-gray-500 dark:text-gray-400">Vehicles you can book without waiting for owner approval</span>
-                </span>
-                <input type="checkbox" checked={instantBooking} onChange={(e) => setInstantBooking(e.target.checked)} className="h-5 w-5 accent-[var(--primary-purple)]" />
-              </label>
-
               <section className="border-t border-gray-200 pt-6 dark:border-white/10">
                 <p className="mb-4 text-xs font-extrabold uppercase text-gray-500">Number of seats</p>
                 <div className="flex items-center justify-between">
@@ -305,17 +289,6 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
               </label>
 
               <section className="border-t border-gray-200 pt-6 dark:border-white/10">
-                <p className="mb-4 text-xs font-extrabold uppercase text-gray-500">Features</p>
-                <div className="flex flex-wrap gap-2">
-                  {featureFilters.map((feature) => (
-                    <button key={feature} type="button" className="border border-gray-200 px-4 py-2 text-sm text-[#1d1138] dark:border-white/10 dark:text-gray-100">
-                      {feature}
-                    </button>
-                  ))}
-                </div>
-              </section>
-
-              <section className="border-t border-gray-200 pt-6 dark:border-white/10">
                 <p className="mb-4 text-xs font-extrabold uppercase text-gray-500">Transmission</p>
                 <div className="space-y-3 text-[#1d1138] dark:text-gray-100">
                   {[
@@ -334,10 +307,21 @@ export default function SearchPage({ params }: { params: Promise<{ locale: strin
               <section className="border-t border-gray-200 pt-6 dark:border-white/10">
                 <p className="mb-4 text-xs font-extrabold uppercase text-gray-500">Fuel type</p>
                 <div className="flex flex-wrap gap-4 text-[#1d1138] dark:text-gray-100">
-                  {fuelTypes.map((fuel) => (
-                    <label key={fuel} className="flex items-center gap-2">
-                      <input type="checkbox" className="h-5 w-5 accent-[var(--primary-purple)]" />
-                      {fuel}
+                  {fuelOptions.map((fuel) => (
+                    <label key={fuel.value} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={fuelTypeFilter.includes(fuel.value)}
+                        onChange={(e) =>
+                          setFuelTypeFilter((prev) =>
+                            e.target.checked
+                              ? [...prev, fuel.value]
+                              : prev.filter((f) => f !== fuel.value),
+                          )
+                        }
+                        className="h-5 w-5 accent-[var(--primary-purple)]"
+                      />
+                      {fuel.label}
                     </label>
                   ))}
                 </div>

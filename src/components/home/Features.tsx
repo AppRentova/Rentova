@@ -15,52 +15,55 @@ interface FeaturesProps {
 }
 
 const visualImage =
-  "https://images.unsplash.com/photo-1526045612212-70caf35c14df?auto=format&fit=crop&w=1100&q=80";
+  "https://images.unsplash.com/photo-1485291571150-772bcfc10da5?auto=format&fit=crop&w=1300&q=82";
 
 export function Features({ messages }: FeaturesProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
   const features = [
     {
-      icon: ":-)",
+      number: "01",
       title: t("home.feature_hourly"),
       desc: t("home.feature_hourly_desc"),
     },
     {
-      icon: "[]",
+      number: "02",
       title: t("home.feature_no_wait"),
       desc: t("home.feature_no_wait_desc"),
     },
     {
-      icon: "car",
+      number: "03",
       title: t("home.feature_app"),
       desc: t("home.feature_app_desc"),
     },
   ];
 
   return (
-    <section className="border-y border-gray-100 bg-white py-24 dark:border-white/10 dark:bg-[#0c0c12]">
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 sm:px-6 lg:grid-cols-[0.85fr_1.15fr] lg:px-8">
-        <div className="group overflow-hidden border border-gray-200 bg-gray-100 shadow-[0_24px_70px_rgba(17,24,39,0.10)] dark:border-white/10 dark:bg-white/10">
-          <img src={visualImage} alt="People picking up a shared rental car" className="h-full min-h-[420px] w-full object-cover transition duration-700 group-hover:scale-105" />
+    <section className="border-y border-[#130f1f]/10 bg-white py-20 dark:border-white/10 dark:bg-[#0b0b10]">
+      <div className="mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:px-8">
+        <div className="group relative min-h-[520px] overflow-hidden border border-[#130f1f]/15 bg-[#f4f1ea] dark:border-white/10 dark:bg-white/5">
+          <img src={visualImage} alt="Rentova arac teslim deneyimi" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />
+          <div className="absolute inset-0 bg-black/15" />
+          <div className="absolute bottom-5 left-5 right-5 border border-white/20 bg-white/90 p-5 text-[#130f1f] backdrop-blur dark:bg-[#0b0b10]/85 dark:text-white">
+            <p className="text-xs font-black uppercase tracking-[0.25em] text-[#653496]">Designed for Turkey</p>
+            <p className="mt-2 text-2xl font-black tracking-tight">Yakindaki arac, net fiyat, hizli cikis.</p>
+          </div>
         </div>
 
         <div className="flex flex-col justify-center">
-          <h2 className="max-w-xl text-4xl font-black leading-tight text-[#1d1138] dark:text-white sm:text-5xl">
-            Discover the new way <span className="block text-[var(--primary-purple)]">to rent a car</span>
-          </h2>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-700 dark:text-gray-300">
-            Choose from cars available from private and professional owners near you. Search, book, unlock and return from one flow.
+          <p className="w-fit border border-[#130f1f]/15 px-4 py-2 text-xs font-black uppercase tracking-[0.28em] text-[#5b5668] dark:border-white/10 dark:text-white/55">
+            Rentova Flow
           </p>
+          <h2 className="mt-5 max-w-2xl text-4xl font-black leading-[1.02] tracking-[-0.04em] text-[#130f1f] dark:text-white sm:text-6xl">
+            Kiralama akisi daha kisa, karar vermek daha kolay.
+          </h2>
 
-          <div className="mt-8 space-y-6">
+          <div className="mt-10 divide-y divide-[#130f1f]/10 border-y border-[#130f1f]/10 dark:divide-white/10 dark:border-white/10">
             {features.map((feature) => (
-              <div key={feature.title} className="grid grid-cols-[40px_1fr] gap-4 transition hover:translate-x-1">
-                <div className="flex h-10 w-10 items-center justify-center border border-[var(--primary-purple)] text-xs font-black text-[var(--primary-purple)] transition hover:bg-[var(--primary-purple)] hover:text-white">
-                  {feature.icon}
-                </div>
+              <div key={feature.number} className="grid gap-4 py-6 transition hover:bg-[#f8f6f1] dark:hover:bg-white/5 sm:grid-cols-[72px_1fr]">
+                <div className="text-sm font-black text-[#653496]">{feature.number}</div>
                 <div>
-                  <h3 className="text-lg font-extrabold text-[#1d1138] dark:text-white">{feature.title}</h3>
-                  <p className="mt-2 leading-7 text-gray-700 dark:text-gray-300">{feature.desc}</p>
+                  <h3 className="text-xl font-black text-[#130f1f] dark:text-white">{feature.title}</h3>
+                  <p className="mt-2 max-w-2xl leading-7 text-[#5b5668] dark:text-white/65">{feature.desc}</p>
                 </div>
               </div>
             ))}
@@ -68,10 +71,10 @@ export function Features({ messages }: FeaturesProps) {
 
           <a
             href="#categories"
-            className="mt-8 inline-flex w-fit items-center gap-3 border-2 border-[var(--primary-purple)] px-8 py-4 text-base font-extrabold text-[var(--primary-purple)] transition hover:bg-[var(--primary-purple)] hover:text-white"
+            className="mt-8 inline-flex w-fit items-center gap-3 border border-[#130f1f] px-7 py-4 text-sm font-black uppercase tracking-[0.16em] text-[#130f1f] transition hover:-translate-y-0.5 hover:bg-[#130f1f] hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-[#130f1f]"
           >
-            See how it works
-            <span aria-hidden>→</span>
+            Nasil calisir
+            <span aria-hidden>+</span>
           </a>
         </div>
       </div>
