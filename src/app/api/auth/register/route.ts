@@ -1,55 +1,43 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { hashPassword, generateToken, setAuthCookie } from "@/lib/auth";
-import { registerSchema } from "@/lib/validations";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const data = registerSchema.parse(body);
+    const { name, email, password, phone } = body;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
+    if (!name || !email || !password) {
+      return NextResponse.json({ error: "Ad, e-posta ve şifre gerekli" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, phone: phone ?? null } },
     });
 
-    if (existingUser) {
+    if (error || !data.user) {
       return NextResponse.json(
-        { error: "Bu e-posta adresi zaten kullanılıyor" },
-        { status: 400 }
+        { error: error?.message || "Kayıt başarısız" },
+        { status: 400 },
       );
     }
 
-    const hashedPassword = await hashPassword(data.password);
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id, name, email, role")
+      .eq("id", data.user.id)
+      .maybeSingle();
 
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email,
-        phone: data.phone || null,
-        password: hashedPassword,
+    return NextResponse.json(
+      {
+        user: profile ?? { id: data.user.id, name, email, role: "USER" },
       },
-    });
-
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    await setAuthCookie(token);
-
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-      },
-    });
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Register error:", error);
-    return NextResponse.json(
-      { error: "Kayıt sırasında bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Kayıt sırasında bir hata oluştu" }, { status: 500 });
   }
 }

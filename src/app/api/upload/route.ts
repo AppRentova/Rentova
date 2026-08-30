@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 import { v4 as uuidv4 } from "uuid";
+
+const MAX_SIZE = 8 * 1024 * 1024;
+const ALLOWED = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
 
 export async function POST(request: Request) {
   try {
@@ -13,29 +15,42 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
-
     if (!file) {
       return NextResponse.json({ error: "Dosya gerekli" }, { status: 400 });
     }
 
+    if (!ALLOWED.includes(file.type)) {
+      return NextResponse.json(
+        { error: "Yalnızca JPEG, PNG, WEBP, GIF veya AVIF yüklenebilir" },
+        { status: 400 },
+      );
+    }
+    if (file.size > MAX_SIZE) {
+      return NextResponse.json({ error: "Dosya boyutu 8 MB'dan büyük olamaz" }, { status: 400 });
+    }
+
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const fileName = `${uuidv4()}.${ext}`;
+    const pathInBucket = `${session.userId}/${fileName}`;
 
-    const ext = path.extname(file.name) || ".jpg";
-    const fileName = `${uuidv4()}${ext}`;
-    const uploadDir = path.join(process.cwd(), "public", "uploads");
+    const supabase = await createServiceClient();
+    const { error: uploadError } = await supabase.storage
+      .from("car-images")
+      .upload(pathInBucket, bytes, { contentType: file.type, upsert: false });
 
-    await mkdir(uploadDir, { recursive: true });
-    await writeFile(path.join(uploadDir, fileName), buffer);
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      return NextResponse.json({ error: "Dosya yüklenemedi" }, { status: 500 });
+    }
 
-    const url = `/uploads/${fileName}`;
+    const { data: urlData } = supabase.storage
+      .from("car-images")
+      .getPublicUrl(pathInBucket);
 
-    return NextResponse.json({ url, fileName }, { status: 201 });
+    return NextResponse.json({ url: urlData.publicUrl, fileName }, { status: 201 });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json(
-      { error: "Dosya yüklenirken bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Dosya yüklenirken bir hata oluştu" }, { status: 500 });
   }
 }

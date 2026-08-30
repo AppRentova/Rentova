@@ -1,14 +1,131 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
+import { mapBooking } from "@/lib/supabase/mappers";
 
-const ACTIVE_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "ACTIVE"] as const;
+const ACTIVE_BOOKING_STATUSES = ["PENDING", "CONFIRMED", "ACTIVE"];
+const VALID_STATUSES = ["PENDING", "CONFIRMED", "ACTIVE", "COMPLETED", "CANCELLED"];
+
+export async function GET() {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Giriş yapmalısınız" }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .select(
+        `id, carId:car_id, startDate:start_date, endDate:end_date, totalPrice:total_price, status,
+         car:cars(id, brand, model, year, images:car_images(id, url, is_primary))`,
+      )
+      .eq("renter_id", session.userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Bookings fetch error:", error);
+      return NextResponse.json({ error: "Rezervasyonlar yüklenemedi" }, { status: 500 });
+    }
+
+    return NextResponse.json((data || []).map(mapBooking));
+  } catch (error) {
+    console.error("Bookings fetch error:", error);
+    return NextResponse.json({ error: "Rezervasyonlar yüklenemedi" }, { status: 500 });
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: "Giriş yapmalısınız" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { carId, startDate, endDate } = body;
+    if (!carId || !startDate || !endDate) {
+      return NextResponse.json(
+        { error: "Araç, başlangıç tarihi ve bitiş tarihi gerekli" },
+        { status: 400 },
+      );
+    }
+
+    const supabase = await createClient();
+    const { data: car, error: carError } = await supabase
+      .from("cars")
+      .select("id, price_per_day, owner_id")
+      .eq("id", carId)
+      .single();
+
+    if (carError || !car) {
+      return NextResponse.json({ error: "Araç bulunamadı" }, { status: 404 });
+    }
+    if (car.owner_id === session.userId) {
+      return NextResponse.json({ error: "Kendi aracınızı kiralayamazsınız" }, { status: 400 });
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return NextResponse.json({ error: "Geçerli tarihler girin" }, { status: 400 });
+    }
+    if (end <= start) {
+      return NextResponse.json({ error: "Bitiş tarihi başlangıçtan sonra olmalı" }, { status: 400 });
+    }
+    if (start < new Date()) {
+      return NextResponse.json({ error: "Geçmiş tarih için rezervasyon yapılamaz" }, { status: 400 });
+    }
+
+    const { data: overlap } = await supabase
+      .from("bookings")
+      .select("id")
+      .eq("car_id", carId)
+      .in("status", ACTIVE_BOOKING_STATUSES)
+      .lt("start_date", endDate)
+      .gt("end_date", startDate)
+      .maybeSingle();
+
+    if (overlap) {
+      return NextResponse.json({ error: "Bu tarihlerde araç müsait değil" }, { status: 409 });
+    }
+
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    const totalPrice = days * car.price_per_day;
+
+    const { data: booking, error } = await supabase
+      .from("bookings")
+      .insert({
+        car_id: carId,
+        renter_id: session.userId,
+        start_date: start.toISOString(),
+        end_date: end.toISOString(),
+        total_price: totalPrice,
+        status: "CONFIRMED",
+      })
+      .select(
+        `id, carId:car_id, startDate:start_date, endDate:end_date, totalPrice:total_price, status,
+         car:cars(id, brand, model, year, images:car_images(id, url, is_primary))`,
+      )
+      .single();
+
+    if (error) {
+      console.error("Booking create error:", error);
+      return NextResponse.json({ error: "Rezervasyon oluşturulamadı" }, { status: 500 });
+    }
+
+    return NextResponse.json(mapBooking(booking), { status: 201 });
+  } catch (error) {
+    console.error("Booking create error:", error);
+    return NextResponse.json({ error: "Rezervasyon oluşturulamadı" }, { status: 500 });
+  }
+}
 
 export async function PATCH(request: Request) {
   try {
     const session = await getSession();
     if (!session) {
-      return NextResponse.json({ error: "GiriÅŸ yapmalÄ±sÄ±nÄ±z" }, { status: 401 });
+      return NextResponse.json({ error: "Giriş yapmalısınız" }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -17,167 +134,56 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Rezervasyon ID gerekli" }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { status: newStatus } = body;
-
+    const { status: newStatus } = await request.json();
     if (!newStatus) {
-      return NextResponse.json({ error: "GÃ¼ncellenecek durum gerekli" }, { status: 400 });
+      return NextResponse.json({ error: "Güncellenecek durum gerekli" }, { status: 400 });
+    }
+    if (!VALID_STATUSES.includes(newStatus)) {
+      return NextResponse.json({ error: "Geçersiz rezervasyon durumu" }, { status: 400 });
     }
 
-    const booking = await prisma.booking.findUnique({ where: { id } });
-    if (!booking) {
-      return NextResponse.json({ error: "Rezervasyon bulunamadÄ±" }, { status: 404 });
+    const supabase = await createClient();
+    const { data: booking, error: fetchError } = await supabase
+      .from("bookings")
+      .select("renter_id, car:cars(owner_id)")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !booking) {
+      return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
 
-    if (booking.renterId !== session.userId && session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Bu iÅŸlem iÃ§in yetkiniz yok" }, { status: 403 });
+    const isRenter = booking.renter_id === session.userId;
+    const isOwner = (booking.car as any)?.owner_id === session.userId;
+
+    if (!isRenter && !isOwner && session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Bu işlem için yetkiniz yok" }, { status: 403 });
+    }
+    if (session.role !== "ADMIN" && isOwner && !["CONFIRMED", "ACTIVE", "COMPLETED", "CANCELLED"].includes(newStatus)) {
+      return NextResponse.json({ error: "Bu işlem için yetkiniz yok" }, { status: 403 });
+    }
+    if (session.role !== "ADMIN" && isRenter && newStatus !== "CANCELLED") {
+      return NextResponse.json({ error: "Bu işlem için yetkiniz yok" }, { status: 403 });
     }
 
-    if (newStatus === "CANCELLED" && booking.status === "COMPLETED") {
-      return NextResponse.json(
-        { error: "TamamlanmÄ±ÅŸ rezervasyon iptal edilemez" },
-        { status: 400 }
-      );
+    const { data: updated, error } = await supabase
+      .from("bookings")
+      .update({ status: newStatus })
+      .eq("id", id)
+      .select(
+        `id, carId:car_id, startDate:start_date, endDate:end_date, totalPrice:total_price, status,
+         car:cars(id, brand, model, year)`,
+      )
+      .single();
+
+    if (error) {
+      console.error("Booking update error:", error);
+      return NextResponse.json({ error: "Rezervasyon güncellenemedi" }, { status: 500 });
     }
 
-    const updated = await prisma.booking.update({
-      where: { id },
-      data: { status: newStatus },
-      include: {
-        car: {
-          select: { id: true, brand: true, model: true, year: true },
-        },
-      },
-    });
-
-    return NextResponse.json(updated);
+    return NextResponse.json(mapBooking(updated));
   } catch (error) {
     console.error("Booking update error:", error);
-    return NextResponse.json(
-      { error: "Rezervasyon gÃ¼ncellenirken bir hata oluÅŸtu" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET() {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "GiriÅŸ yapmalÄ±sÄ±nÄ±z" }, { status: 401 });
-    }
-
-    const bookings = await prisma.booking.findMany({
-      where: {
-        renterId: session.userId,
-      },
-      include: {
-        car: {
-          select: {
-            id: true,
-            brand: true,
-            model: true,
-            year: true,
-            images: { take: 1, orderBy: { isPrimary: "desc" } },
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    });
-
-    return NextResponse.json(bookings);
-  } catch (error) {
-    console.error("Bookings fetch error:", error);
-    return NextResponse.json(
-      { error: "Rezervasyonlar yÃ¼klenirken bir hata oluÅŸtu" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function POST(request: Request) {
-  try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: "GiriÅŸ yapmalÄ±sÄ±nÄ±z" }, { status: 401 });
-    }
-
-    const body = await request.json();
-    const { carId, startDate, endDate } = body;
-
-    if (!carId || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: "AraÃ§, baÅŸlangÄ±Ã§ tarihi ve bitiÅŸ tarihi gerekli" },
-        { status: 400 }
-      );
-    }
-
-    const car = await prisma.car.findUnique({ where: { id: carId } });
-    if (!car) {
-      return NextResponse.json({ error: "AraÃ§ bulunamadÄ±" }, { status: 404 });
-    }
-
-    if (car.ownerId === session.userId) {
-      return NextResponse.json(
-        { error: "Kendi aracÄ±nÄ±zÄ± kiralayamazsÄ±nÄ±z" },
-        { status: 400 }
-      );
-    }
-
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-      return NextResponse.json({ error: "GeÃ§erli tarihler girin" }, { status: 400 });
-    }
-
-    if (end <= start) {
-      return NextResponse.json(
-        { error: "BitiÅŸ tarihi baÅŸlangÄ±Ã§ tarihinden sonra olmalÄ±dÄ±r" },
-        { status: 400 }
-      );
-    }
-
-    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    const totalPrice = days * car.pricePerDay;
-
-    const overlapping = await prisma.booking.findFirst({
-      where: {
-        carId,
-        status: { in: [...ACTIVE_BOOKING_STATUSES] },
-        AND: [{ startDate: { lt: end } }, { endDate: { gt: start } }],
-      },
-    });
-
-    if (overlapping) {
-      return NextResponse.json(
-        { error: "Bu tarihlerde araÃ§ mÃ¼sait deÄŸil" },
-        { status: 409 }
-      );
-    }
-
-    const booking = await prisma.booking.create({
-      data: {
-        carId,
-        renterId: session.userId,
-        startDate: start,
-        endDate: end,
-        totalPrice,
-        status: "CONFIRMED",
-      },
-      include: {
-        car: {
-          select: { brand: true, model: true },
-        },
-      },
-    });
-
-    return NextResponse.json(booking, { status: 201 });
-  } catch (error) {
-    console.error("Booking create error:", error);
-    return NextResponse.json(
-      { error: "Rezervasyon oluÅŸturulurken bir hata oluÅŸtu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Rezervasyon güncellenemedi" }, { status: 500 });
   }
 }

@@ -3,97 +3,97 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  phone         String?
-  password      String
-  image         String?
-  role          String    @default("USER")
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  email     String    @unique
+  phone     String?
+  role      String    @default("USER")
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  cars          Car[]
-  bookings      Booking[]
-  reviews       Review[]
+  cars         Car[]
+  bookings     Booking[]
+  reviews      Review[]
+
+  @@map("users")
 }
 
 model Car {
-  id              String    @id @default(cuid())
-  ownerId         String
-  brand           String
-  model           String
-  year            Int
-  transmission    String
-  fuelType        String
-  seats           Int
-  pricePerHour    Float
-  pricePerDay     Float
-  deposit         Float     @default(0)
-  description     String
-  lat             Float
-  lng             Float
-  address         String
-  city            String
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id            String    @id @default(uuid()) @db.Uuid
+  ownerId       String    @map("owner_id") @db.Uuid
+  brand         String
+  model         String
+  year          Int
+  transmission  String
+  fuelType      String    @map("fuel_type")
+  seats         Int
+  pricePerHour  Float     @map("price_per_hour")
+  pricePerDay   Float     @map("price_per_day")
+  deposit       Float     @default(0)
+  description   String
+  lat           Float?    @map("lat")
+  lng           Float?    @map("lng")
+  address       String?
+  city          String?
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  owner           User      @relation(fields: [ownerId], references: [id])
-  images          CarImage[]
-  bookings        Booking[]
-  reviews         Review[]
-  availabilities  CarAvailability[]
+  owner         User             @relation(fields: [ownerId], references: [id])
+  images        CarImage[]
+  bookings      Booking[]
+  reviews       Review[]
+  availabilities CarAvailability[]
 
   @@index([city])
   @@index([isActive])
+  @@map("cars")
 }
 
 model CarImage {
-  id        String @id @default(cuid())
-  carId     String
+  id        String  @id @default(uuid()) @db.Uuid
+  carId     String  @map("car_id") @db.Uuid
   url       String
-  isPrimary Boolean @default(false)
+  isPrimary Boolean @default(false) @map("is_primary")
 
-  car       Car    @relation(fields: [carId], references: [id], onDelete: Cascade)
+  car       Car     @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@index([carId])
+  @@map("car_images")
 }
 
 model Booking {
-  id          String   @id @default(cuid())
-  carId       String
-  renterId    String
-  startDate   DateTime
-  endDate     DateTime
-  totalPrice  Float
-  status      String   @default("PENDING")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(uuid()) @db.Uuid
+  carId      String   @map("car_id") @db.Uuid
+  renterId   String   @map("renter_id") @db.Uuid
+  startDate  DateTime @map("start_date") @db.Timestamptz(6)
+  endDate    DateTime @map("end_date") @db.Timestamptz(6)
+  totalPrice Float    @map("total_price")
+  status     String   @default("CONFIRMED")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
-  car         Car      @relation(fields: [carId], references: [id])
-  renter      User     @relation(fields: [renterId], references: [id])
-  review      Review?
+  car        Car      @relation(fields: [carId], references: [id])
+  renter     User     @relation(fields: [renterId], references: [id])
+  review     Review?
 
   @@index([carId])
   @@index([renterId])
   @@index([status])
+  @@map("bookings")
 }
 
 model Review {
-  id         String   @id @default(cuid())
-  bookingId  String   @unique
-  reviewerId String
-  carId      String
+  id         String   @id @default(uuid()) @db.Uuid
+  bookingId  String   @unique @map("booking_id") @db.Uuid
+  reviewerId String   @map("reviewer_id") @db.Uuid
+  carId      String   @map("car_id") @db.Uuid
   rating     Int
   comment    String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
 
   booking    Booking  @relation(fields: [bookingId], references: [id])
   reviewer   User     @relation(fields: [reviewerId], references: [id])
@@ -101,16 +101,18 @@ model Review {
 
   @@index([carId])
   @@index([reviewerId])
+  @@map("reviews")
 }
 
 model CarAvailability {
-  id          String   @id @default(cuid())
-  carId       String
-  date        DateTime
-  isAvailable Boolean  @default(true)
+  id          String   @id @default(uuid()) @db.Uuid
+  carId       String   @map("car_id") @db.Uuid
+  date        DateTime @map("date") @db.Date
+  isAvailable Boolean  @default(true) @map("is_available")
 
   car         Car      @relation(fields: [carId], references: [id], onDelete: Cascade)
 
   @@unique([carId, date])
   @@index([carId])
+  @@map("car_availability")
 }

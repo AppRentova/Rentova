@@ -27,7 +27,19 @@ export const carSchema = z.object({
   lng: z.coerce.number().min(-180).max(180),
   address: z.string().min(1, "Adres zorunludur"),
   city: z.string().min(1, "Åehir zorunludur"),
-  images: z.array(z.string().url()).max(8).optional(),
+  images: z
+    .array(
+      z
+        .string()
+        .min(1)
+        .max(2048)
+        .refine(
+          (val) => val.startsWith("/") || /^https?:\/\//.test(val),
+          { message: "Gorsel yolu gecersiz" },
+        ),
+    )
+    .max(8)
+    .optional(),
 });
 
 export const bookingSchema = z.object({

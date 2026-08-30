@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
 
 function lookup(messages: Record<string, any>, key: string): string {
@@ -23,6 +23,15 @@ export function Header({ messages, locale, session }: HeaderProps) {
   const t = useCallback((key: string) => lookup(messages, key), [messages]);
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+
+  const switchLocale = useCallback(() => {
+    const newLocale = locale === "tr" ? "en" : "tr";
+    document.cookie = `rentova_locale=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
+    const newPath = (pathname || `/${locale}`).replace(/^\/(tr|en)(?=\/|$)/, `/${newLocale}`);
+    router.push(newPath);
+    router.refresh();
+  }, [locale, pathname, router]);
 
   const handleLogout = useCallback(async () => {
     setMenuOpen(false);
@@ -66,6 +75,15 @@ export function Header({ messages, locale, session }: HeaderProps) {
             </button>
           </Link>
 
+          <button
+            type="button"
+            onClick={switchLocale}
+            className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-[var(--primary-purple)] hover:text-[var(--primary-purple)] dark:border-white/10 dark:text-gray-200"
+            aria-label="Switch language"
+          >
+            {locale === "tr" ? "EN" : "TR"}
+          </button>
+
           <ThemeToggle />
         </div>
 
@@ -87,6 +105,15 @@ export function Header({ messages, locale, session }: HeaderProps) {
       {menuOpen && (
         <div className="border-t border-gray-100 bg-white dark:border-white/10 dark:bg-[#101018] md:hidden">
           <div className="space-y-3 px-6 py-4">
+            <div className="pb-2">
+              <button
+                type="button"
+                onClick={switchLocale}
+                className="rounded-sm border border-gray-200 px-3 py-1.5 text-sm font-semibold text-gray-700 transition-colors hover:border-[var(--primary-purple)] hover:text-[var(--primary-purple)] dark:border-white/10 dark:text-gray-200"
+              >
+                {locale === "tr" ? "English" : "Türkçe"}
+              </button>
+            </div>
             <div className="pb-2">
               <ThemeToggle />
             </div>

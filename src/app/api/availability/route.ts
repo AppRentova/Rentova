@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
 
 export async function GET(request: Request) {
@@ -13,60 +13,53 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Araç ID gerekli" }, { status: 400 });
     }
 
-    const car = await prisma.car.findUnique({ where: { id: carId } });
-    if (!car) {
-      return NextResponse.json({ error: "Araç bulunamadı" }, { status: 404 });
-    }
+    const supabase = await createClient();
 
     if (startDate && endDate) {
       const start = new Date(startDate);
       const end = new Date(endDate);
 
-      const overlapping = await prisma.booking.findFirst({
-        where: {
-          carId,
-          status: { in: ["PENDING", "CONFIRMED", "ACTIVE"] },
-          AND: [
-            { startDate: { lt: end } },
-            { endDate: { gt: start } },
-          ],
-        },
-      });
+      const { data: overlapping } = await supabase
+        .from("bookings")
+        .select("id")
+        .eq("car_id", carId)
+        .in("status", ["PENDING", "CONFIRMED", "ACTIVE"])
+        .lt("start_date", endDate)
+        .gt("end_date", startDate)
+        .maybeSingle();
 
       if (overlapping) {
         return NextResponse.json({ available: false, message: "Bu tarihlerde araç müsait değil" });
       }
-
       return NextResponse.json({ available: true });
     }
 
-    const availabilities = await prisma.carAvailability.findMany({
-      where: { carId },
-      orderBy: { date: "asc" },
-    });
+    const { data: availabilities } = await supabase
+      .from("car_availability")
+      .select("id, car_id, date, is_available")
+      .eq("car_id", carId)
+      .order("date", { ascending: true });
 
-    const endDates = await prisma.booking.findMany({
-      where: {
-        carId,
-        status: { in: ["PENDING", "CONFIRMED", "ACTIVE"] },
-        endDate: { gte: new Date() },
-      },
-      select: { startDate: true, endDate: true },
-      orderBy: { startDate: "asc" },
-    });
+    const { data: booked } = await supabase
+      .from("bookings")
+      .select("start_date, end_date")
+      .eq("car_id", carId)
+      .in("status", ["PENDING", "CONFIRMED", "ACTIVE"])
+      .gte("end_date", new Date().toISOString())
+      .order("start_date", { ascending: true });
 
     return NextResponse.json({
-      availabilities,
-      bookedRanges: endDates.map((b) => ({
-        startDate: b.startDate,
-        endDate: b.endDate,
+      availabilities: availabilities || [],
+      bookedRanges: (booked || []).map((b) => ({
+        startDate: b.start_date,
+        endDate: b.end_date,
       })),
     });
   } catch (error) {
     console.error("Availability fetch error:", error);
     return NextResponse.json(
       { error: "Müsaitlik bilgisi yüklenirken bir hata oluştu" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -80,38 +73,47 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { carId, date, isAvailable } = body;
-
     if (!carId || !date) {
       return NextResponse.json({ error: "Araç ID ve tarih gerekli" }, { status: 400 });
     }
 
-    const car = await prisma.car.findUnique({ where: { id: carId } });
-    if (!car) {
+    const supabase = await createClient();
+    const { data: car, error: carError } = await supabase
+      .from("cars")
+      .select("owner_id")
+      .eq("id", carId)
+      .single();
+
+    if (carError || !car) {
       return NextResponse.json({ error: "Araç bulunamadı" }, { status: 404 });
     }
-
-    if (car.ownerId !== session.userId && session.role !== "ADMIN") {
+    if (car.owner_id !== session.userId && session.role !== "ADMIN") {
       return NextResponse.json({ error: "Bu işlem için yetkiniz yok" }, { status: 403 });
     }
 
-    const availability = await prisma.carAvailability.upsert({
-      where: {
-        carId_date: { carId, date: new Date(date) },
-      },
-      update: { isAvailable: isAvailable ?? true },
-      create: {
-        carId,
-        date: new Date(date),
-        isAvailable: isAvailable ?? true,
-      },
-    });
+    const { data, error } = await supabase
+      .from("car_availability")
+      .upsert(
+        { car_id: carId, date: new Date(date).toISOString().slice(0, 10), is_available: isAvailable ?? true },
+        { onConflict: "car_id,date" },
+      )
+      .select()
+      .single();
 
-    return NextResponse.json(availability, { status: 201 });
+    if (error) {
+      console.error("Availability create error:", error);
+      return NextResponse.json(
+        { error: "Müsaitlik bilgisi eklenirken bir hata oluştu" },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("Availability create error:", error);
     return NextResponse.json(
       { error: "Müsaitlik bilgisi eklenirken bir hata oluştu" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -4,13 +4,32 @@ import type { NextRequest } from "next/server";
 const locales = ["tr", "en"];
 const defaultLocale = "tr";
 
+function withCors(request: NextRequest, response: NextResponse): NextResponse {
+  const origin = request.headers.get("origin");
+  response.headers.set("Access-Control-Allow-Origin", origin || "*");
+  response.headers.set("Access-Control-Allow-Credentials", "true");
+  response.headers.set(
+    "Access-Control-Allow-Methods",
+    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+  );
+  response.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return response;
+}
+
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isApiRoute = pathname.startsWith("/api/");
-  const isStaticFile = pathname.match(/\.(png|jpg|jpeg|svg|ico|css|js)$/);
+  const isStaticFile = pathname.match(/\.(png|jpg|jpeg|svg|ico|css|js|webp|gif|avif|woff2?|ttf|map)$/);
 
-  if (isApiRoute || isStaticFile) {
+  if (isApiRoute) {
+    if (request.method === "OPTIONS") {
+      return withCors(request, new NextResponse(null, { status: 204 }));
+    }
+    return withCors(request, NextResponse.next());
+  }
+
+  if (isStaticFile) {
     return NextResponse.next();
   }
 
@@ -36,5 +55,5 @@ export default function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next|uploads|favicon.ico).*)"],
 };

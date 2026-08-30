@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { CancelBookingButton } from "@/components/booking/CancelBookingButton";
 
@@ -27,20 +27,28 @@ export default async function BookingsPage({ params }: { params: Promise<{ local
     redirect(`/${locale}/auth/login`);
   }
 
-  const bookings = await prisma.booking.findMany({
-    where: { renterId: session.userId },
-    include: {
-      car: {
-        select: {
-          id: true,
-          brand: true,
-          model: true,
-          year: true,
-          images: { take: 1, orderBy: { isPrimary: "desc" } },
-        },
-      },
-    },
-    orderBy: { createdAt: "desc" },
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("bookings")
+    .select(
+      `id, startDate:start_date, endDate:end_date, totalPrice:total_price, status,
+       car:cars(id, brand, model, year, images:car_images(id, url, is_primary))`,
+    )
+    .eq("renter_id", session.userId)
+    .order("created_at", { ascending: false });
+
+  const bookings = (data || []).map((b: any) => {
+    const sorted = (b.car?.images || []).slice().sort((a: any, c: any) => (c.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+    return {
+      id: b.id,
+      startDate: b.startDate,
+      endDate: b.endDate,
+      totalPrice: b.totalPrice,
+      status: b.status,
+      car: b.car
+        ? { brand: b.car.brand, model: b.car.model, year: b.car.year, images: sorted.length ? [{ url: sorted[0].url }] : [] }
+        : { brand: "", model: "", year: 0, images: [] },
+    };
   });
 
   return (

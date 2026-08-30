@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button, Input, Select } from "@/components/ui";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useAuth } from "@/hooks/useAuth";
 
 type FormState = {
   brand: string;
@@ -27,6 +28,7 @@ export default function ListYourCarPage({
 }) {
   const router = useRouter();
   const geo = useGeolocation();
+  const { user, loading: authLoading } = useAuth();
   const [locale, setLocale] = useState("tr");
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,6 +55,12 @@ export default function ListYourCarPage({
     params.then((p) => setLocale(p.locale));
     geo.requestLocation();
   }, [params, geo.requestLocation]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push(`/${locale}/auth/login?redirect=/${locale}/list-your-car`);
+    }
+  }, [authLoading, user, locale, router]);
 
   useEffect(() => {
     setForm((prev) => {
@@ -153,6 +161,14 @@ export default function ListYourCarPage({
       ...prev,
       address: `GPS konumu: ${geo.center[0].toFixed(5)}, ${geo.center[1].toFixed(5)}`,
     }));
+  }
+
+  if (authLoading || !user) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center text-gray-600">
+        Yükleniyor...
+      </div>
+    );
   }
 
   return (

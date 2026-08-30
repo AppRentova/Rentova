@@ -1,5 +1,5 @@
 import { getSession } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 
@@ -11,13 +11,29 @@ export default async function MyCarsPage({ params }: { params: Promise<{ locale:
     redirect(`/${locale}/auth/login`);
   }
 
-  const cars = await prisma.car.findMany({
-    where: { ownerId: session.userId },
-    include: {
-      images: { take: 1, orderBy: { isPrimary: "desc" } },
-      _count: { select: { bookings: true } },
-    },
-    orderBy: { createdAt: "desc" },
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("cars")
+    .select(
+      `id, brand, model, year, city, pricePerDay:price_per_day,
+       images:car_images(id, url, is_primary),
+       bookings:bookings(id)`,
+    )
+    .eq("owner_id", session.userId)
+    .order("created_at", { ascending: false });
+
+  const cars = (data || []).map((c: any) => {
+    const sorted = (c.images || []).slice().sort((a: any, b: any) => (b.is_primary ? 1 : 0) - (a.is_primary ? 1 : 0));
+    return {
+      id: c.id,
+      brand: c.brand,
+      model: c.model,
+      year: c.year,
+      city: c.city,
+      pricePerDay: c.pricePerDay,
+      images: sorted.length ? [{ url: sorted[0].url }] : [],
+      _count: { bookings: (c.bookings || []).length },
+    };
   });
 
   return (

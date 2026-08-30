@@ -1,53 +1,35 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { verifyPassword, generateToken, setAuthCookie } from "@/lib/auth";
-import { loginSchema } from "@/lib/validations";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const data = loginSchema.parse(body);
-
-    const user = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "E-posta veya şifre hatalı" },
-        { status: 401 }
-      );
+    const { email, password } = await request.json();
+    if (!email || !password) {
+      return NextResponse.json({ error: "E-posta ve şifre gerekli" }, { status: 400 });
     }
 
-    const isValid = await verifyPassword(data.password, user.password);
-    if (!isValid) {
-      return NextResponse.json(
-        { error: "E-posta veya şifre hatalı" },
-        { status: 401 }
-      );
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
     }
 
-    const token = generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    await setAuthCookie(token);
+    const { data: profile } = await supabase
+      .from("users")
+      .select("id, name, email, role")
+      .eq("id", data.user.id)
+      .single();
 
     return NextResponse.json({
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      user: profile ?? {
+        id: data.user.id,
+        name: data.user.email ?? email,
+        email: data.user.email ?? email,
+        role: "USER",
       },
     });
   } catch (error) {
     console.error("Login error:", error);
-    return NextResponse.json(
-      { error: "Giriş sırasında bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Giriş sırasında bir hata oluştu" }, { status: 500 });
   }
 }

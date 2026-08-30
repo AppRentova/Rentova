@@ -1,31 +1,32 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { createClient } from "@/lib/supabase/server";
 import { getSession } from "@/lib/auth";
+import { mapReview } from "@/lib/supabase/mappers";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const carId = searchParams.get("carId");
+    if (!carId) {
+      return NextResponse.json({ error: "carId gerekli" }, { status: 400 });
+    }
 
-    const where = carId ? { carId } : {};
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("id, rating, comment, reviewer:users(name)")
+      .eq("car_id", carId)
+      .order("created_at", { ascending: false });
 
-    const reviews = await prisma.review.findMany({
-      where,
-      include: {
-        reviewer: { select: { name: true, image: true } },
-        booking: { select: { startDate: true, endDate: true } },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-    });
+    if (error) {
+      console.error("Reviews fetch error:", error);
+      return NextResponse.json({ error: "Yorumlar yüklenemedi" }, { status: 500 });
+    }
 
-    return NextResponse.json(reviews);
+    return NextResponse.json((data || []).map(mapReview));
   } catch (error) {
     console.error("Reviews fetch error:", error);
-    return NextResponse.json(
-      { error: "Değerlendirmeler yüklenirken bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Yorumlar yüklenemedi" }, { status: 500 });
   }
 }
 
@@ -38,63 +39,47 @@ export async function POST(request: Request) {
 
     const body = await request.json();
     const { bookingId, rating, comment } = body;
-
-    if (!bookingId || !rating || rating < 1 || rating > 5) {
-      return NextResponse.json(
-        { error: "Geçerli bir değerlendirme puanı girin (1-5)" },
-        { status: 400 }
-      );
+    if (!bookingId || !rating) {
+      return NextResponse.json({ error: "Rezervasyon ve puan gerekli" }, { status: 400 });
     }
 
-    const booking = await prisma.booking.findUnique({
-      where: { id: bookingId },
-    });
+    const supabase = await createClient();
+    const { data: booking, error: bError } = await supabase
+      .from("bookings")
+      .select("id, car_id, renter_id, status")
+      .eq("id", bookingId)
+      .single();
 
-    if (!booking) {
+    if (bError || !booking) {
       return NextResponse.json({ error: "Rezervasyon bulunamadı" }, { status: 404 });
     }
-
-    if (booking.renterId !== session.userId) {
-      return NextResponse.json(
-        { error: "Bu rezervasyonu değerlendirme yetkiniz yok" },
-        { status: 403 }
-      );
+    if (booking.renter_id !== session.userId) {
+      return NextResponse.json({ error: "Bu yorumu yazamazsınız" }, { status: 403 });
     }
-
     if (booking.status !== "COMPLETED") {
-      return NextResponse.json(
-        { error: "Sadece tamamlanmış rezervasyonlar değerlendirilebilir" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Yalnızca tamamlanan kiralamalara yorum yazılabilir" }, { status: 400 });
     }
 
-    const existing = await prisma.review.findUnique({ where: { bookingId } });
-    if (existing) {
-      return NextResponse.json(
-        { error: "Bu rezervasyon zaten değerlendirildi" },
-        { status: 409 }
-      );
+    const { data: review, error } = await supabase
+      .from("reviews")
+      .insert({
+        booking_id: bookingId,
+        reviewer_id: session.userId,
+        car_id: booking.car_id,
+        rating: Number(rating),
+        comment: comment || "",
+      })
+      .select("id, rating, comment, reviewer:users(name)")
+      .single();
+
+    if (error) {
+      console.error("Review create error:", error);
+      return NextResponse.json({ error: "Yorum eklenemedi" }, { status: 500 });
     }
 
-    const review = await prisma.review.create({
-      data: {
-        bookingId,
-        reviewerId: session.userId,
-        carId: booking.carId,
-        rating,
-        comment: comment || null,
-      },
-      include: {
-        reviewer: { select: { name: true, image: true } },
-      },
-    });
-
-    return NextResponse.json(review, { status: 201 });
+    return NextResponse.json(mapReview(review), { status: 201 });
   } catch (error) {
     console.error("Review create error:", error);
-    return NextResponse.json(
-      { error: "Değerlendirme eklenirken bir hata oluştu" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Yorum eklenemedi" }, { status: 500 });
   }
 }

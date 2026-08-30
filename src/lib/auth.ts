@@ -1,63 +1,31 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { cookies } from "next/headers";
+import { createClient } from "./supabase/server";
 
-const JWT_SECRET = process.env.JWT_SECRET || "rentova-jwt-secret";
-
-export interface JWTPayload {
+export interface Session {
   userId: string;
   email: string;
   role: string;
+  name?: string;
 }
 
-export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, 12);
-}
+export async function getSession(): Promise<Session | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
 
-export async function verifyPassword(
-  password: string,
-  hashedPassword: string
-): Promise<boolean> {
-  return bcrypt.compare(password, hashedPassword);
-}
+  const { data: profile } = await supabase
+    .from("users")
+    .select("id, name, email, role")
+    .eq("id", user.id)
+    .maybeSingle();
 
-export function generateToken(payload: JWTPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
-}
+  if (!profile) return null;
 
-export function verifyToken(token: string): JWTPayload | null {
-  try {
-    return jwt.verify(token, JWT_SECRET) as JWTPayload;
-  } catch {
-    return null;
-  }
-}
-
-export async function getSession(): Promise<JWTPayload | null> {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("rentova_token")?.value;
-  if (!token) return null;
-  return verifyToken(token);
-}
-
-export async function setAuthCookie(token: string) {
-  const cookieStore = await cookies();
-  cookieStore.set("rentova_token", token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 7 * 24 * 60 * 60,
-    path: "/",
-  });
-}
-
-export async function clearAuthCookie() {
-  const cookieStore = await cookies();
-  cookieStore.set("rentova_token", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    maxAge: 0,
-    path: "/",
-  });
+  return {
+    userId: profile.id,
+    email: profile.email,
+    role: profile.role,
+    name: profile.name,
+  };
 }
