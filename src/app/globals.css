@@ -1,175 +1,89 @@
-@import "tailwindcss";
-
-@custom-variant dark (&:where(.dark, .dark *));
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 :root {
-  --background: #fcf9f8;
-  --foreground: #1b1b1c;
-  --primary-purple: #653496;
-  --primary-purple-hover: #4d187d;
-  --surface: #ffffff;
-  --surface-muted: #f6f3f2;
-  --border-soft: #cec3d2;
+  --background: 39 33% 98%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 44 96% 92%;
+  --accent-foreground: 28 80% 28%;
+  --brand: 18 100% 58%;
+  --brand-foreground: 0 0% 100%;
+  --border: 214 32% 91%;
 }
 
-.dark {
-  --background: #0c0c12;
-  --foreground: #f5f6fb;
-  --primary-purple: #d100d1;
-  --primary-purple-hover: #f000f0;
-  --surface: #12121a;
-  --surface-muted: #191925;
-  --border-soft: rgba(255, 255, 255, 0.12);
-  color-scheme: dark;
+[data-theme="dark"] {
+  --background: 222 47% 8%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 11%;
+  --card-foreground: 210 40% 98%;
+  --muted: 217 33% 18%;
+  --muted-foreground: 215 20% 70%;
+  --accent: 217 33% 18%;
+  --accent-foreground: 210 40% 98%;
+  --brand: 18 100% 58%;
+  --brand-foreground: 0 0% 100%;
+  --border: 217 33% 18%;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-brand-purple: var(--primary-purple);
-  --color-brand-purple-hover: var(--primary-purple-hover);
-  --font-sans: var(--font-body);
+* {
+  border-color: hsl(var(--border));
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+html {
   scroll-behavior: smooth;
 }
 
-.dark .leaflet-container {
-  background: #ffffff;
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.09), transparent 24%),
+    hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-.dark .leaflet-control-zoom a,
-.dark .leaflet-popup-content-wrapper {
-  background: #ffffff;
-  color: #1d1138;
-  border-color: #e5e7eb;
+[data-theme="dark"] body {
+  background:
+    radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(249, 115, 22, 0.07), transparent 24%),
+    hsl(var(--background));
 }
 
-/* Custom Hide Scrollbar style */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.glass {
+  background: color-mix(in srgb, hsl(var(--card)) 84%, transparent);
+  backdrop-filter: blur(20px);
 }
 
-/* Leaflet Custom Price Bubble Marker styling */
-.price-bubble-marker {
-  background: transparent !important;
-  border: none !important;
+.map-surface {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.96), rgba(245,247,250,0.92)),
+    radial-gradient(circle at 20% 20%, rgba(249,115,22,0.12), transparent 0 24%),
+    radial-gradient(circle at 80% 30%, rgba(251,191,36,0.14), transparent 0 22%),
+    radial-gradient(circle at 50% 80%, rgba(14,165,233,0.08), transparent 0 24%);
 }
 
-.price-bubble {
-  background-color: #b400b4;
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 5px 12px;
-  border-radius: 4px;
-  border: 2px solid #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  cursor: pointer;
+[data-theme="dark"] .map-surface {
+  background:
+    linear-gradient(135deg, rgba(247,250,252,0.98), rgba(241,245,249,0.96)),
+    radial-gradient(circle at 20% 20%, rgba(249,115,22,0.12), transparent 0 24%),
+    radial-gradient(circle at 80% 30%, rgba(251,191,36,0.14), transparent 0 22%),
+    radial-gradient(circle at 50% 80%, rgba(14,165,233,0.08), transparent 0 24%);
 }
 
-.dark .price-bubble {
-  border-color: #151522;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+.grid-overlay {
+  background-image:
+    linear-gradient(to right, rgba(148,163,184,0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148,163,184,0.12) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-.price-bubble:hover {
-  background-color: #960096;
-  transform: scale(1.05);
+.calendar-day {
+  aspect-ratio: 1;
 }
 
-.price-bubble.selected {
-  background-color: #1d1138;
-  color: #ffffff;
-  z-index: 1000;
-}
-
-.rentova-popup {
-  width: 240px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: #ffffff;
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
-}
-
-.rentova-popup-image {
-  position: relative;
-  height: 132px;
-  background: #f3f4f6;
-}
-
-.rentova-popup-image img {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-}
-
-.rentova-popup-image span {
-  position: absolute;
-  left: 8px;
-  top: 8px;
-  background: #ffffff;
-  color: #1d1138;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 3px 7px;
-  text-transform: uppercase;
-}
-
-.rentova-popup-body {
-  padding: 12px;
-}
-
-.rentova-popup-body h4 {
-  color: #1d1138;
-  font-size: 14px;
-  font-weight: 800;
-}
-
-.rentova-popup-rating {
-  color: #7e22ce;
-  font-size: 12px;
-  font-weight: 700;
-  margin-top: 4px;
-}
-
-.rentova-popup-price {
-  align-items: baseline;
-  border-top: 1px solid #f3f4f6;
-  color: #6b7280;
-  display: flex;
-  flex-wrap: wrap;
-  font-size: 11px;
-  font-weight: 700;
-  gap: 4px;
-  margin-top: 10px;
-  padding-top: 8px;
-}
-
-.rentova-popup-price span {
-  text-decoration: line-through;
-}
-
-.rentova-popup-price strong {
-  color: #1d1138;
-  font-size: 14px;
-  font-weight: 900;
-}
-
-.rentova-popup-price em {
-  font-style: normal;
-}

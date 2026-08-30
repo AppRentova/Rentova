@@ -1,43 +1,30 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
-import { Hanken_Grotesk, Plus_Jakarta_Sans } from "next/font/google";
-import "./globals.css";
+import { Manrope, Space_Grotesk } from "next/font/google";
+import "@/app/globals.css";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
-const hankenGrotesk = Hanken_Grotesk({
-  variable: "--font-body",
+const sans = Manrope({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
 });
 
-const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-heading",
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  variable: "--font-display",
 });
 
 export const metadata: Metadata = {
-  title: "Rentova - Arac Kiralama ve Kiralik Arac",
-  description:
-    "Turkiye'nin en kolay arac kiralama platformu. Saatlik veya gunluk arac kiralayin, aracinizi kiraya verin.",
+  title: "Rentova",
+  description: "Türkiye için modern araç kiralama platformu.",
 };
 
-export default async function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
-  const cookieStore = await cookies();
-  const locale = cookieStore.get("rentova_locale")?.value === "en" ? "en" : "tr";
-
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang={locale}
-      className={`${hankenGrotesk.variable} ${plusJakarta.variable}`}
-      suppressHydrationWarning
-    >
-      <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased transition-colors">
-        {children}
+    <html lang="tr" suppressHydrationWarning className={`${sans.variable} ${display.variable}`}>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
 }
+

@@ -1,49 +1,40 @@
-"use client";
+import { cn } from "@/lib/utils";
+import type { ButtonHTMLAttributes } from "react";
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: "default" | "secondary" | "ghost" | "outline";
   size?: "sm" | "md" | "lg";
-  loading?: boolean;
-}
+};
+
+const variantStyles: Record<NonNullable<ButtonProps["variant"]>, string> = {
+  default: "bg-brand text-brand-foreground shadow-glow hover:brightness-105",
+  secondary: "bg-accent text-accent-foreground hover:bg-accent/90",
+  ghost: "bg-transparent hover:bg-muted",
+  outline: "border border-border bg-card hover:bg-muted",
+};
+
+const sizeStyles: Record<NonNullable<ButtonProps["size"]>, string> = {
+  sm: "h-9 px-3 text-sm",
+  md: "h-11 px-5",
+  lg: "h-12 px-6 text-base",
+};
 
 export function Button({
-  variant = "primary",
+  className,
+  variant = "default",
   size = "md",
-  loading,
-  className = "",
-  children,
-  disabled,
   ...props
 }: ButtonProps) {
-  const base = "inline-flex items-center justify-center font-medium rounded-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white disabled:opacity-50 disabled:cursor-not-allowed dark:focus:ring-offset-[#0c0c12]";
-
-  const variants = {
-    primary: "bg-black text-white hover:bg-gray-800 focus:ring-black dark:bg-white dark:text-[#101018] dark:hover:bg-gray-200",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500 dark:bg-white/10 dark:text-white dark:hover:bg-white/15",
-    outline: "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-black dark:border-white/15 dark:text-gray-100 dark:hover:bg-white/10",
-    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500 dark:text-gray-100 dark:hover:bg-white/10",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
-  };
-
-  const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-sm",
-    lg: "px-8 py-3 text-base",
-  };
-
   return (
     <button
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
-      disabled={disabled || loading}
-      {...props}
-    >
-      {loading && (
-        <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-        </svg>
+      className={cn(
+        "inline-flex items-center justify-center gap-2 rounded-full font-medium transition-transform duration-200 hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-50",
+        variantStyles[variant],
+        sizeStyles[size],
+        className
       )}
-      {children}
-    </button>
+      {...props}
+    />
   );
 }
+
