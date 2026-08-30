@@ -3,13 +3,13 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  --primary-purple: #b400b4;
-  --primary-purple-hover: #960096;
+  --background: #fcf9f8;
+  --foreground: #1b1b1c;
+  --primary-purple: #653496;
+  --primary-purple-hover: #4d187d;
   --surface: #ffffff;
-  --surface-muted: #f6f6f8;
-  --border-soft: #e5e7eb;
+  --surface-muted: #f6f3f2;
+  --border-soft: #cec3d2;
 }
 
 .dark {
@@ -28,13 +28,13 @@
   --color-foreground: var(--foreground);
   --color-brand-purple: var(--primary-purple);
   --color-brand-purple-hover: var(--primary-purple-hover);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-body);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
   scroll-behavior: smooth;
 }
 

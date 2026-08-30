@@ -1,22 +1,24 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Hanken_Grotesk, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-body",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-heading",
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
 });
 
 export const metadata: Metadata = {
-  title: "Rentova - Araç Kiralama ve Kiralık Araç",
+  title: "Rentova - Arac Kiralama ve Kiralik Arac",
   description:
-    "Türkiye'nin en kolay araç kiralama platformu. Saatlik veya günlük araç kiralayın, aracınızı kiraya verin.",
+    "Turkiye'nin en kolay arac kiralama platformu. Saatlik veya gunluk arac kiralayin, aracinizi kiraya verin.",
 };
 
 export default async function RootLayout({
@@ -30,7 +32,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${hankenGrotesk.variable} ${plusJakarta.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased transition-colors">
