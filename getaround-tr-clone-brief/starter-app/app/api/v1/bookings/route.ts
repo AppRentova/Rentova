@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server";import { bookingSchema } from "../../../../lib/validation";
+export async function POST(request:Request){const parsed=bookingSchema.safeParse(await request.json());if(!parsed.success)return NextResponse.json({error:{code:"INVALID_BOOKING",issues:parsed.error.flatten()}},{status:422});return NextResponse.json({data:{id:"mock_booking_01",status:"PENDING",...parsed.data},meta:{paymentProvider:"mock",verificationProvider:"mock"}},{status:201})}

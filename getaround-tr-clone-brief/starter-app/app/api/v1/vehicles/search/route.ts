@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server";import { vehicles } from "../../../../../lib/vehicles";
+export async function GET(request:Request){const url=new URL(request.url);const location=url.searchParams.get("location")?.toLocaleLowerCase("en")??"";const result=location?vehicles.filter(v=>`${v.district} ${v.city}`.toLocaleLowerCase("en").includes(location.split(",")[0])):vehicles;return NextResponse.json({data:result,meta:{provider:"mock",count:result.length}})}

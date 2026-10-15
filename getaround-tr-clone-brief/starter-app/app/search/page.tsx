@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+import { VehicleRow } from "../../components/vehicle-row";
+import { vehicles } from "../../lib/vehicles";
+export const metadata: Metadata = { title: "Search cars" };
+export default function SearchPage(){return <main className="page-shell"><h1 className="page-title">Cars that fit the trip.</h1><p className="page-lead">Illustrative availability. Connect the search API and map provider when production credentials are ready.</p><div className="search-layout"><aside className="filter-panel"><h2>Filter</h2><label>Vehicle type<select defaultValue="all"><option value="all">All vehicles</option><option>SUV</option><option>Electric</option></select></label><label>Transmission<select><option>Any</option><option>Automatic</option><option>Manual</option></select></label><label>Maximum daily price<input type="number" defaultValue="2500" /></label><label><input type="checkbox" defaultChecked /> Instant booking</label></aside><section className="results-list" aria-label="Search results">{vehicles.map(v=><VehicleRow key={v.id} vehicle={v}/>)}</section></div></main>}

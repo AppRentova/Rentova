@@ -1,0 +1,3 @@
+import { z } from "zod";
+export const vehicleSearchSchema = z.object({ location: z.string().trim().min(2).max(120), pickupDate: z.coerce.date(), returnDate: z.coerce.date(), category: z.string().optional() }).refine(v=>v.returnDate>v.pickupDate,{message:"Return must be after pick-up",path:["returnDate"]});
+export const bookingSchema = z.object({ vehicleId:z.string().min(1),startsAt:z.coerce.date(),endsAt:z.coerce.date(),protectionPlan:z.enum(["STANDARD","PLUS","PREMIUM"]),additionalDriver:z.boolean().default(false),idempotencyKey:z.string().uuid() }).refine(v=>v.endsAt>v.startsAt,{message:"Booking end must be after start"});

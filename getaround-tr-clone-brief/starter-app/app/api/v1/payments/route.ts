@@ -1,0 +1,1 @@
+import { NextResponse } from "next/server";export async function POST(request:Request){const key=request.headers.get("idempotency-key");if(!key)return NextResponse.json({error:{code:"IDEMPOTENCY_KEY_REQUIRED",message:"Provide the Idempotency-Key header"}},{status:400});return NextResponse.json({data:{status:"AUTHORIZED",provider:"mock",idempotencyKey:key}})}
