@@ -4,9 +4,8 @@ test("desktop map shows price pins and vehicle details on hover", async ({ page 
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/search");
 
-  const markers = page.locator(".rentova-map-marker");
-  await expect(markers).toHaveCount(10);
-  await markers.first().hover();
+  await expect(page.locator(".vehicle-map")).toHaveAttribute("data-marker-count", "10");
+  await page.locator(".search-result-card").first().hover();
 
   const popup = page.locator(".map-popup-card");
   await expect(popup).toBeVisible();
@@ -19,7 +18,7 @@ test("mobile defers map traffic until the user opens it", async ({ page }, testI
   await page.setViewportSize({ width: 390, height: 844 });
   const tileRequests: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("basemaps.cartocdn.com")) tileRequests.push(request.url());
+    if (request.url().includes("tiles.openfreemap.org")) tileRequests.push(request.url());
   });
 
   await page.goto("/search");
@@ -32,9 +31,10 @@ test("mobile defers map traffic until the user opens it", async ({ page }, testI
   expect(tileRequests).toHaveLength(0);
 
   await openMap.click();
-  const markers = page.locator(".rentova-map-marker");
-  await expect(markers).toHaveCount(10);
-  await markers.first().click();
+  await expect(page.locator(".vehicle-map")).toHaveAttribute("data-marker-count", "10");
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.locator(".search-result-card").first().hover();
+  await page.getByRole("button", { name: "Map", exact: true }).click();
   await expect(page.locator(".map-popup-card")).toContainText("Renault Clio");
   expect(tileRequests.length).toBeGreaterThan(0);
   await page.screenshot({ path: testInfo.outputPath("mobile-map.png"), fullPage: true });

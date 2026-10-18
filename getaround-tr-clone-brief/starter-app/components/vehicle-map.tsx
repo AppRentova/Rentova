@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Map as LeafletMap, Marker } from "leaflet";
+import type { Map as MapLibreMap, Popup } from "maplibre-gl";
 import type { Vehicle } from "../lib/vehicles";
 import { formatCurrency } from "../lib/i18n";
+
+const DEFAULT_MAP_STYLE = "https://tiles.openfreemap.org/styles/bright";
+const SOURCE_ID = "rentova-vehicles";
+const LAYER_ID = "rentova-price-pins";
 
 function createPopup(vehicle: Vehicle) {
   const card = document.createElement("article");
   card.className = "map-popup-card";
-
   const image = document.createElement("img");
   image.src = vehicle.image;
   image.alt = "";
   image.width = 280;
   image.height = 132;
-
+  image.loading = "lazy";
   const content = document.createElement("div");
   content.className = "map-popup-content";
-
   const heading = document.createElement("div");
   heading.className = "map-popup-heading";
   const identity = document.createElement("div");
@@ -30,7 +32,6 @@ function createPopup(vehicle: Vehicle) {
   rating.setAttribute("aria-label", `Rated ${vehicle.rating} out of 5`);
   rating.textContent = `★ ${vehicle.rating}`;
   heading.append(identity, rating);
-
   const meta = document.createElement("div");
   meta.className = "map-popup-meta";
   const distance = document.createElement("span");
@@ -41,7 +42,6 @@ function createPopup(vehicle: Vehicle) {
   priceUnit.textContent = "/ day";
   price.append(priceUnit);
   meta.append(distance, price);
-
   const link = document.createElement("a");
   link.href = `/cars/${vehicle.id}`;
   link.textContent = "View car details";
@@ -51,84 +51,142 @@ function createPopup(vehicle: Vehicle) {
   return card;
 }
 
+function createPillImage() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 80;
+  canvas.height = 72;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas is not supported");
+  context.shadowColor = "rgba(48, 38, 82, .24)";
+  context.shadowBlur = 10;
+  context.shadowOffsetY = 5;
+  context.fillStyle = "#ffffff";
+  context.strokeStyle = "#e2dde8";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.roundRect(8, 8, 64, 52, 8);
+  context.fill();
+  context.stroke();
+  return context.getImageData(0, 0, 80, 72);
+}
+
 export function VehicleMap({ vehicles, activeId, onActive }: { vehicles: Vehicle[]; activeId: string | null; onActive: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
-  const markersRef = useRef(new Map<string, Marker>());
+  const mapRef = useRef<MapLibreMap | null>(null);
+  const popupRef = useRef<Popup | null>(null);
+  const activeIdRef = useRef(activeId);
   const onActiveRef = useRef(onActive);
+  activeIdRef.current = activeId;
   onActiveRef.current = onActive;
 
   useEffect(() => {
     let disposed = false;
-
     async function initialiseMap() {
       if (!containerRef.current || mapRef.current) return;
-      const L = await import("leaflet");
+      const maplibre = await import("maplibre-gl");
       if (disposed || !containerRef.current) return;
-
-      const map = L.map(containerRef.current, {
-        attributionControl: true,
-        scrollWheelZoom: false,
-        zoomControl: false,
+      maplibre.setWorkerUrl("/maplibre/maplibre-gl-worker.mjs");
+      const map = new maplibre.Map({
+        container: containerRef.current,
+        style: process.env.NEXT_PUBLIC_MAP_STYLE_URL || DEFAULT_MAP_STYLE,
+        center: [29.01, 41.02],
+        zoom: 10.5,
+        attributionControl: { compact: true },
+        dragRotate: false,
+        pitchWithRotate: false,
+        cooperativeGestures: true,
       });
       mapRef.current = map;
+      map.addControl(new maplibre.NavigationControl({ showCompass: false }), "bottom-right");
+      const bounds = new maplibre.LngLatBounds();
+      const vehicleById = new Map(vehicles.map((vehicle) => [vehicle.id, vehicle]));
+      const data = {
+        type: "FeatureCollection" as const,
+        features: vehicles.map((vehicle) => {
+          const coordinates: [number, number] = [vehicle.location.lng, vehicle.location.lat];
+          bounds.extend(coordinates);
+          return {
+            type: "Feature" as const,
+            geometry: { type: "Point" as const, coordinates },
+            properties: { id: vehicle.id, price: formatCurrency(vehicle.dailyPrice) },
+          };
+        }),
+      };
 
-      L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        maxZoom: 19,
-      }).addTo(map);
+      const showPopup = (vehicle: Vehicle) => {
+        popupRef.current?.remove();
+        popupRef.current = new maplibre.Popup({ className: "rentova-map-popup", closeButton: true, closeOnClick: false, maxWidth: "280px", offset: 22 })
+          .setLngLat([vehicle.location.lng, vehicle.location.lat])
+          .setDOMContent(createPopup(vehicle))
+          .addTo(map);
+        onActiveRef.current(vehicle.id);
+      };
 
-      const bounds = L.latLngBounds([]);
-      vehicles.forEach((vehicle) => {
-        const price = formatCurrency(vehicle.dailyPrice);
-        const icon = L.divIcon({
-          className: "rentova-map-marker",
-          html: `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2m-14 0v2m14-2v2M5 12h14M7 15h.01M17 15h.01M7 7l1-3h8l1 3"/></svg><span>${price}</span>`,
-          iconSize: [84, 36],
-          iconAnchor: [42, 18],
-          popupAnchor: [0, -22],
+      map.on("load", () => {
+        if (disposed) return;
+        map.addImage("rentova-price-pill", createPillImage(), {
+          pixelRatio: 2,
+          stretchX: [[20, 60]],
+          stretchY: [[20, 52]],
+          content: [16, 12, 64, 60],
         });
-        const marker = L.marker(vehicle.location, {
-          icon,
-          keyboard: true,
-          riseOnHover: true,
-          title: `${vehicle.name}, ${vehicle.district}, ${price} per day`,
-        }).addTo(map);
-
-        marker.bindPopup(createPopup(vehicle), {
-          className: "rentova-map-popup",
-          closeButton: true,
-          maxWidth: 280,
-          minWidth: 260,
-          autoPanPadding: L.point(28, 28),
+        map.addSource(SOURCE_ID, { type: "geojson", data });
+        map.addLayer({
+          id: LAYER_ID,
+          type: "symbol",
+          source: SOURCE_ID,
+          layout: {
+            "icon-image": "rentova-price-pill",
+            "icon-text-fit": "both",
+            "icon-text-fit-padding": [8, 12, 8, 12],
+            "icon-allow-overlap": true,
+            "text-field": ["get", "price"],
+            "text-size": 12,
+            "text-font": ["Noto Sans Bold"],
+            "text-allow-overlap": true,
+          },
+          paint: { "text-color": "#302652" },
         });
-        marker.on("mouseover focus click", () => { onActiveRef.current(vehicle.id); marker.openPopup(); });
-        const element = marker.getElement();
-        element?.setAttribute("role", "button");
-        element?.setAttribute("aria-label", `${vehicle.name} in ${vehicle.district}, ${price} per day`);
-        markersRef.current.set(vehicle.id, marker);
-        bounds.extend(vehicle.location);
+        map.on("mouseenter", LAYER_ID, (event) => {
+          map.getCanvas().style.cursor = "pointer";
+          const id = event.features?.[0]?.properties?.id;
+          const vehicle = typeof id === "string" ? vehicleById.get(id) : undefined;
+          if (vehicle) showPopup(vehicle);
+        });
+        map.on("mouseleave", LAYER_ID, () => { map.getCanvas().style.cursor = ""; });
+        map.on("click", LAYER_ID, (event) => {
+          const id = event.features?.[0]?.properties?.id;
+          const vehicle = typeof id === "string" ? vehicleById.get(id) : undefined;
+          if (vehicle) showPopup(vehicle);
+        });
+        if (!bounds.isEmpty()) map.fitBounds(bounds, { padding: 68, maxZoom: 12.8, duration: 0 });
+        const initiallyActive = activeIdRef.current ? vehicleById.get(activeIdRef.current) : undefined;
+        if (initiallyActive) showPopup(initiallyActive);
+        map.resize();
       });
-
-      if (bounds.isValid()) map.fitBounds(bounds, { padding: [48, 48], maxZoom: 13 });
-      requestAnimationFrame(() => map.invalidateSize());
     }
-
     initialiseMap();
     return () => {
       disposed = true;
-      markersRef.current.clear();
+      popupRef.current?.remove();
+      popupRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
     };
   }, [vehicles]);
 
   useEffect(() => {
-    if (!activeId) return;
-    const marker = markersRef.current.get(activeId);
-    marker?.openPopup();
-  }, [activeId]);
+    if (!activeId || !mapRef.current?.isStyleLoaded()) return;
+    const vehicle = vehicles.find((item) => item.id === activeId);
+    if (!vehicle) return;
+    void import("maplibre-gl").then(({ Popup: MapPopup }) => {
+      popupRef.current?.remove();
+      popupRef.current = new MapPopup({ className: "rentova-map-popup", closeButton: true, closeOnClick: false, maxWidth: "280px", offset: 22 })
+        .setLngLat([vehicle.location.lng, vehicle.location.lat])
+        .setDOMContent(createPopup(vehicle))
+        .addTo(mapRef.current!);
+    });
+  }, [activeId, vehicles]);
 
-  return <div ref={containerRef} className="vehicle-map" aria-label="Map showing approximate vehicle locations" />;
+  return <div ref={containerRef} className="vehicle-map" data-marker-count={vehicles.length} aria-label="Map showing approximate vehicle locations" />;
 }
