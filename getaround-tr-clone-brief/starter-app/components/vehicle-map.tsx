@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import type { Map as LeafletMap } from "leaflet";
+import type { Map as LeafletMap, Marker } from "leaflet";
 import type { Vehicle } from "../lib/vehicles";
 import { formatCurrency } from "../lib/i18n";
 
@@ -51,9 +51,12 @@ function createPopup(vehicle: Vehicle) {
   return card;
 }
 
-export function VehicleMap({ vehicles }: { vehicles: Vehicle[] }) {
+export function VehicleMap({ vehicles, activeId, onActive }: { vehicles: Vehicle[]; activeId: string | null; onActive: (id: string) => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const markersRef = useRef(new Map<string, Marker>());
+  const onActiveRef = useRef(onActive);
+  onActiveRef.current = onActive;
 
   useEffect(() => {
     let disposed = false;
@@ -71,8 +74,8 @@ export function VehicleMap({ vehicles }: { vehicles: Vehicle[] }) {
       mapRef.current = map;
 
       L.control.zoom({ position: "bottomright" }).addTo(map);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
         maxZoom: 19,
       }).addTo(map);
 
@@ -81,10 +84,10 @@ export function VehicleMap({ vehicles }: { vehicles: Vehicle[] }) {
         const price = formatCurrency(vehicle.dailyPrice);
         const icon = L.divIcon({
           className: "rentova-map-marker",
-          html: `<span>${price}</span>`,
-          iconSize: [88, 38],
-          iconAnchor: [44, 38],
-          popupAnchor: [0, -34],
+          html: `<svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 17H3v-5l2-5h14l2 5v5h-2m-14 0v2m14-2v2M5 12h14M7 15h.01M17 15h.01M7 7l1-3h8l1 3"/></svg><span>${price}</span>`,
+          iconSize: [84, 36],
+          iconAnchor: [42, 18],
+          popupAnchor: [0, -22],
         });
         const marker = L.marker(vehicle.location, {
           icon,
@@ -100,10 +103,11 @@ export function VehicleMap({ vehicles }: { vehicles: Vehicle[] }) {
           minWidth: 260,
           autoPanPadding: L.point(28, 28),
         });
-        marker.on("mouseover focus click", () => marker.openPopup());
+        marker.on("mouseover focus click", () => { onActiveRef.current(vehicle.id); marker.openPopup(); });
         const element = marker.getElement();
         element?.setAttribute("role", "button");
         element?.setAttribute("aria-label", `${vehicle.name} in ${vehicle.district}, ${price} per day`);
+        markersRef.current.set(vehicle.id, marker);
         bounds.extend(vehicle.location);
       });
 
@@ -114,10 +118,17 @@ export function VehicleMap({ vehicles }: { vehicles: Vehicle[] }) {
     initialiseMap();
     return () => {
       disposed = true;
+      markersRef.current.clear();
       mapRef.current?.remove();
       mapRef.current = null;
     };
   }, [vehicles]);
+
+  useEffect(() => {
+    if (!activeId) return;
+    const marker = markersRef.current.get(activeId);
+    marker?.openPopup();
+  }, [activeId]);
 
   return <div ref={containerRef} className="vehicle-map" aria-label="Map showing approximate vehicle locations" />;
 }
