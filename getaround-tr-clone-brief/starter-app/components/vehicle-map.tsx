@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { Map as MapLibreMap, Popup } from "maplibre-gl";
+import type { Coordinates } from "../lib/geo";
 import type { Vehicle } from "../lib/vehicles";
 import { formatCurrency } from "../lib/i18n";
 
@@ -70,7 +71,7 @@ function createPillImage() {
   return context.getImageData(0, 0, 80, 72);
 }
 
-export function VehicleMap({ vehicles, activeId, onActive }: { vehicles: Vehicle[]; activeId: string | null; onActive: (id: string) => void }) {
+export function VehicleMap({ vehicles, activeId, onActive, userLocation }: { vehicles: Vehicle[]; activeId: string | null; onActive: (id: string) => void; userLocation: Coordinates | null }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const popupRef = useRef<Popup | null>(null);
@@ -147,6 +148,12 @@ export function VehicleMap({ vehicles, activeId, onActive }: { vehicles: Vehicle
           },
           paint: { "text-color": "#302652" },
         });
+        if (userLocation) {
+          map.addSource("rentova-user-location", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: [userLocation.lng, userLocation.lat] } } });
+          map.addLayer({ id: "rentova-user-location-halo", type: "circle", source: "rentova-user-location", paint: { "circle-radius": 13, "circle-color": "#ffffff", "circle-opacity": 0.9 } });
+          map.addLayer({ id: "rentova-user-location", type: "circle", source: "rentova-user-location", paint: { "circle-radius": 7, "circle-color": "#8c01de", "circle-stroke-width": 2, "circle-stroke-color": "#ffffff" } });
+          bounds.extend([userLocation.lng, userLocation.lat]);
+        }
         map.on("mouseenter", LAYER_ID, (event) => {
           map.getCanvas().style.cursor = "pointer";
           const id = event.features?.[0]?.properties?.id;
@@ -173,7 +180,7 @@ export function VehicleMap({ vehicles, activeId, onActive }: { vehicles: Vehicle
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [vehicles]);
+  }, [vehicles, userLocation]);
 
   useEffect(() => {
     if (!activeId || !mapRef.current?.isStyleLoaded()) return;

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
-import { CalendarDays, ChevronDown, MapPin, SlidersHorizontal } from "lucide-react";
-import { SearchExplorer } from "../../components/search-explorer";
+import { SearchWorkspace } from "../../components/search-workspace";
 import { vehicles } from "../../lib/vehicles";
+
 export const metadata: Metadata = { title: "Search cars" };
-export default function SearchPage(){return <main className="search-page"><h1 className="sr-only">Cars available near Kadıköy</h1><form className="search-command-bar" action="/search"><label className="search-location"><MapPin aria-hidden="true" /><span>Location</span><input name="location" defaultValue="Kadıköy, Istanbul" autoComplete="street-address" /></label><label><CalendarDays aria-hidden="true" /><span>Pick-up</span><input name="pickup" type="datetime-local" defaultValue="2026-10-20T10:00" /></label><label><CalendarDays aria-hidden="true" /><span>Return</span><input name="return" type="datetime-local" defaultValue="2026-10-22T10:00" /></label><button className="search-submit" type="submit">Update search</button></form><div className="search-filter-bar" aria-label="Search filters"><button type="button">Vehicle type <ChevronDown aria-hidden="true" /></button><button type="button">Transmission <ChevronDown aria-hidden="true" /></button><button type="button">Instant booking <ChevronDown aria-hidden="true" /></button><button type="button" className="more-filters"><SlidersHorizontal aria-hidden="true" /> More filters <span>1</span></button></div><SearchExplorer vehicles={vehicles}/></main>}
+
+export default function SearchPage() {
+  return <main className="search-page"><h1 className="sr-only">Cars available near Kadıköy</h1><SearchWorkspace vehicles={vehicles} /></main>;
+}
